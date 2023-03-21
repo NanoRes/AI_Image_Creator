@@ -1,3 +1,10 @@
+using Solana.Unity.Programs;
+using Solana.Unity.Rpc.Builders;
+using Solana.Unity.Rpc.Core.Http;
+using Solana.Unity.Rpc.Messages;
+using Solana.Unity.Rpc.Models;
+using Solana.Unity.Rpc;
+using Solana.Unity.Wallet;
 using System;
 using System.Collections;
 using System.Text;
@@ -7,6 +14,19 @@ using UnityEngine.UI;
 
 public class AIImageCreator : MonoBehaviour
 {
+    [Serializable]
+    public class ReceivedText
+    {
+        public int created;
+        public ReceivedTextData[] data;
+    }
+
+    [Serializable]
+    public class ReceivedTextData
+    {
+        public string url;
+    }
+
     [SerializeField]
     private RawImage rawImage = null;
     [SerializeField]
@@ -19,7 +39,8 @@ public class AIImageCreator : MonoBehaviour
 
     private string prompt = string.Empty;
     private string editImageURL = string.Empty;
-
+    private string[] imageSizeOptions = { "256x256", "512x512", "1024x1024" };
+    private int currentImageIndex = 0;
     private const string apiKey = "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";
     private const string createImageAPIURL = "https://api.openai.com/v1/images/generations";
     private const string editImageAPIURL = "https://api.openai.com/v1/images/edits";
@@ -33,7 +54,7 @@ public class AIImageCreator : MonoBehaviour
     {
         if(string.IsNullOrEmpty(currentImageURL) == true)
         {
-            Debug.LogWarning("The string currentImageURL is empty within DALL_E's GoToImageURL().");
+            Debug.LogWarning("AIImageCreator - GoToImageURL: The string currentImageURL is empty.");
             return;
         }
 
@@ -42,6 +63,8 @@ public class AIImageCreator : MonoBehaviour
 
     private void OnEnable()
     {
+        Loading.StartLoading();
+
         rawImage.texture = loadingTexture;
 
         if (string.IsNullOrEmpty(editImageURL) == true)
@@ -56,7 +79,9 @@ public class AIImageCreator : MonoBehaviour
 
     private IEnumerator GetRequest(string uri)
     {
-        string requestData = "{\"prompt\": \"" + prompt + "\", \"n\": " + 1 + "}";
+        string requestData = "{\"prompt\": \"" + prompt 
+            + "\", \"n\": " + 1 
+            + ", \"size\": \"" + imageSizeOptions[currentImageIndex] + "\"}";
 
         //if (string.IsNullOrEmpty(editImageURL) == false)
         //{
@@ -81,17 +106,25 @@ public class AIImageCreator : MonoBehaviour
         switch (request.result)
         {
             case UnityWebRequest.Result.ConnectionError:
-            case UnityWebRequest.Result.DataProcessingError:
-                Debug.LogError("Error: " + request.error);
+                Debug.LogError("Connection Error: " + request.error);
                 rawImage.texture = errorTexture;
+                Loading.StopLoading();
                 break;
+
+            case UnityWebRequest.Result.DataProcessingError:
+                Debug.LogError("Data Processing Error: " + request.error);
+                rawImage.texture = errorTexture;
+                Loading.StopLoading();
+                break;
+
             case UnityWebRequest.Result.ProtocolError:
                 Debug.LogError("HTTP Error: " + request.error);
                 rawImage.texture = errorTexture;
+                Loading.StopLoading();
                 break;
+
             case UnityWebRequest.Result.Success:
                 Debug.Log("Received Text: " + request.downloadHandler.text);
-                Debug.Log("Received Data: " + request.downloadHandler.data);
                 StartCoroutine(GetTexture(JsonUtility.FromJson<ReceivedText>(request.downloadHandler.text)));
                 break;
         }
@@ -101,6 +134,7 @@ public class AIImageCreator : MonoBehaviour
     {
         currentImageURL = receivedTextData.data[0].url;
         UnityWebRequest www = UnityWebRequestTexture.GetTexture(currentImageURL);
+
         yield return www.SendWebRequest();
 
         if (www.result != UnityWebRequest.Result.Success)
@@ -113,18 +147,7 @@ public class AIImageCreator : MonoBehaviour
             Debug.Log("Get Texture Result: " + www.result);
             rawImage.texture = ((DownloadHandlerTexture)www.downloadHandler).texture;
         }
+
+        Loading.StopLoading();
     }
-}
-
-[Serializable]
-public class ReceivedText
-{
-    public int created;
-    public ReceivedTextData[] data;
-}
-
-[Serializable]
-public class ReceivedTextData
-{
-    public string url;
 }

@@ -147,8 +147,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rawImage: {fileID: 8757204921500188262}
-  loadingTexture: {fileID: 2800000, guid: d58e94bfb1bac774dbb8ca9c2597ef2e, type: 3}
-  errorTexture: {fileID: 2800000, guid: a0fdac62174ca014b94a537688fc684d, type: 3}
+  loadingTexture: {fileID: 2800000, guid: 916c1183328594c278878acbde6b4324, type: 3}
+  errorTexture: {fileID: 2800000, guid: d11525caf85bbe145be3c72ac0e39e30, type: 3}
   currentImageURL: 
 --- !u!1 &8757204921206681390
 GameObject:
