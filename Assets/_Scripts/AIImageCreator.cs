@@ -40,10 +40,15 @@ public class AIImageCreator : MonoBehaviour
     private string prompt = string.Empty;
     private string editImageURL = string.Empty;
     private string[] imageSizeOptions = { "256x256", "512x512", "1024x1024" };
-    private int currentImageIndex = 0;
+    private int currentImageIndex = 2;
     private const string apiKey = "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";
     private const string createImageAPIURL = "https://api.openai.com/v1/images/generations";
     private const string editImageAPIURL = "https://api.openai.com/v1/images/edits";
+
+    public int GetCurrentImageIndex()
+    {
+        return currentImageIndex;
+    }
 
     public void SetPrompt(string newPrompt)
     {
@@ -52,7 +57,7 @@ public class AIImageCreator : MonoBehaviour
 
     public void GoToImageURL()
     {
-        if(string.IsNullOrEmpty(currentImageURL) == true)
+        if (string.IsNullOrEmpty(currentImageURL) == true)
         {
             Debug.LogWarning("AIImageCreator - GoToImageURL: The string currentImageURL is empty.");
             return;
@@ -79,8 +84,8 @@ public class AIImageCreator : MonoBehaviour
 
     private IEnumerator GetRequest(string uri)
     {
-        string requestData = "{\"prompt\": \"" + prompt 
-            + "\", \"n\": " + 1 
+        string requestData = "{\"prompt\": \"" + prompt
+            + "\", \"n\": " + 1
             + ", \"size\": \"" + imageSizeOptions[currentImageIndex] + "\"}";
 
         //if (string.IsNullOrEmpty(editImageURL) == false)

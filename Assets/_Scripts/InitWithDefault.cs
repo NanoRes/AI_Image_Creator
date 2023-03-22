@@ -5,7 +5,12 @@ using System.Collections.Generic;
 
 public class InitWithDefault : MonoBehaviour
 {
-    async void Start()
+    private void Start()
+    {
+        StartItUp();
+    }
+
+    async void StartItUp()
     {
         try
         {

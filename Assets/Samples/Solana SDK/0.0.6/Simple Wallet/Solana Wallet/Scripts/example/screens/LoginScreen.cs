@@ -43,17 +43,30 @@ namespace Solana.Unity.SDK.Example
 
         private void Start()
         {
+#if UNITY_EDITOR
+
+            string savedPassword = PlayerPrefs.GetString("EDITOR_PASSWORD", "");
+
+            if (string.IsNullOrEmpty(savedPassword) == false)
+            {
+                passwordInputField.SetTextWithoutNotify(savedPassword);
+                LoginChecker();
+                OnClose();
+                return;
+            }
+#endif
+
             passwordText.text = "";
 
             passwordInputField.onSubmit.AddListener(delegate { LoginChecker(); });
 
             loginBtn.onClick.AddListener(LoginChecker);
-            loginBtnGoogle.onClick.AddListener(delegate{LoginCheckerWeb3Auth(Provider.GOOGLE);});
-            loginBtnTwitter.onClick.AddListener(delegate{LoginCheckerWeb3Auth(Provider.TWITTER);});
+            loginBtnGoogle.onClick.AddListener(delegate { LoginCheckerWeb3Auth(Provider.GOOGLE); });
+            loginBtnTwitter.onClick.AddListener(delegate { LoginCheckerWeb3Auth(Provider.TWITTER); });
             loginBtnPhantom.onClick.AddListener(LoginCheckerPhantom);
             loginBtnXNFT.onClick.AddListener(LoginCheckerXnft);
 
-            if (Application.platform != RuntimePlatform.Android && 
+            if (Application.platform != RuntimePlatform.Android &&
                 Application.platform != RuntimePlatform.IPhonePlayer
                 && Application.platform != RuntimePlatform.WindowsPlayer
                 && Application.platform != RuntimePlatform.WindowsEditor
@@ -68,7 +81,7 @@ namespace Solana.Unity.SDK.Example
 
             loginBtnXNFT.gameObject.SetActive(false);
 
-            if(messageTxt != null)
+            if (messageTxt != null)
                 messageTxt.gameObject.SetActive(false);
         }
 
@@ -78,13 +91,13 @@ namespace Solana.Unity.SDK.Example
             var account = await Web3.Instance.LoginInGameWallet(password);
             CheckAccount(account);
         }
-        
+
         private async void LoginCheckerPhantom()
         {
             var account = await Web3.Instance.LoginPhantom();
             CheckAccount(account);
         }
-        
+
         private async void LoginCheckerWeb3Auth(Provider provider)
         {
             var account = await Web3.Instance.LoginInWeb3Auth(provider);
@@ -98,7 +111,7 @@ namespace Solana.Unity.SDK.Example
 
         private async void LoginCheckerXnft()
         {
-            if(Web3.Instance == null) return;
+            if (Web3.Instance == null) return;
             var account = await Web3.Instance.LoginXNFT();
             messageTxt.text = "";
             CheckAccount(account);
@@ -113,6 +126,11 @@ namespace Solana.Unity.SDK.Example
                 manager.ShowScreen(this, "wallet_screen");
                 messageTxt.gameObject.SetActive(false);
                 gameObject.SetActive(false);
+
+#if UNITY_EDITOR
+                PlayerPrefs.SetString("EDITOR_PASSWORD", passwordInputField.text);
+                PlayerPrefs.Save();
+#endif
             }
             else
             {

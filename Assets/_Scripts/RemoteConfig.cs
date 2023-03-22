@@ -3,10 +3,23 @@ using Unity.Services.RemoteConfig;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using UnityEngine;
+using System;
 
 public class RemoteConfig : MonoBehaviour
 {
+    [System.Serializable]
+    public class RemoteConfigInfo
+    {
+        public string PayToSOLWallet = string.Empty;
+        public long PricingInLamports = 0;
+        public string PayToDGLNWallet = string.Empty;
+        public long PricingInDGLN = 0;
+    }
+
+    public static RemoteConfigInfo info = new RemoteConfigInfo();
+
     public struct userAttributes { }
+
     public struct appAttributes { }
 
     async Task InitializeRemoteConfigAsync()
@@ -15,7 +28,7 @@ public class RemoteConfig : MonoBehaviour
         await UnityServices.InitializeAsync();
 
         // remote config requires authentication for managing environment information
-        if (!AuthenticationService.Instance.IsSignedIn)
+        if (AuthenticationService.Instance.IsSignedIn == false)
         {
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
         }
@@ -41,6 +54,13 @@ public class RemoteConfig : MonoBehaviour
 
     void ApplyRemoteSettings(ConfigResponse configResponse)
     {
-        Debug.Log("RemoteConfigService.Instance.appConfig fetched: " + RemoteConfigService.Instance.appConfig.config.ToString());
+        try
+        {
+            JsonUtility.FromJsonOverwrite(RemoteConfigService.Instance.appConfig.config.ToString(), info);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning(exception.Message);
+        }
     }
 }
