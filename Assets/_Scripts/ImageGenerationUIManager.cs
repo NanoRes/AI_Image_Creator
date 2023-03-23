@@ -27,8 +27,9 @@ public class ImageGenerationUIManager : MonoBehaviour
     private AIImageCreator imageCreator = null;
     [SerializeField]
     private TMP_InputField imagePrompt = null;
-    [SerializeField]
-    private bool isFreeForTesting = false;
+
+    public bool isFreeForTesting = false;
+
     [SerializeField]
     private Button optionsButton = null;
     [SerializeField]
@@ -38,6 +39,11 @@ public class ImageGenerationUIManager : MonoBehaviour
     [SerializeField]
     private TMP_Text versionText = null;
 
+    [Header("Animations")]
+    [SerializeField] private Animator headerAnimator;
+    [SerializeField] private Animator footerAnimator;
+    [SerializeField] private Animator spaceshipAnimator;
+
     private const int characterLimit = 1000;
     private const string versionTextPrefix = "Version - ";
     private const string transactionMemoStatement = "NanoRes Studios: AI Image Creator Purchase - v";
@@ -46,6 +52,11 @@ public class ImageGenerationUIManager : MonoBehaviour
     private const string mintDGLNAddress = "E6UU5M1z4CvSAAF99d9wRoXsasWMEXsvHrz3JQRXtm2X";
     private const int pricingInLamports = 25000000;
     private const long pricingInDGLN = 25000000000000;
+
+    private bool playeLightSpeedAnimation;
+
+    public delegate void BeginSpaceshipAnimation();
+    public static BeginSpaceshipAnimation beginSpaceshipAnimation;
 
     public void PromptTextValueChanged()
     {
@@ -89,6 +100,10 @@ public class ImageGenerationUIManager : MonoBehaviour
     {
         currentPaymentMethodSelected = newMethodSelected;
         Run();
+
+        StartCoroutine(TransitionAnimation());
+        //   imageCreator.gameObject.SetActive(false);
+        //  StartCoroutine(ImageRequest());
     }
 
     private void Awake()
@@ -97,6 +112,69 @@ public class ImageGenerationUIManager : MonoBehaviour
         versionText.text = versionTextPrefix + Application.version;
         ClearText();
     }
+
+    public void ResetTransitionAnimations()
+    {
+        footerAnimator.SetBool("InTransition", false);
+        headerAnimator.SetBool("InTransition", false);
+        spaceshipAnimator.SetBool("InTransition", false);
+    }
+
+    public void ResetSpaceshipAnimation()
+    {
+        spaceshipAnimator.SetBool("InTransition", false);
+    }
+
+
+    private IEnumerator TransitionAnimation()
+    {
+        footerAnimator.SetBool("InTransition", true);
+        headerAnimator.SetBool("InTransition", true);
+        playeLightSpeedAnimation = false;
+
+        yield return new WaitForEndOfFrame();
+
+        while (!spaceshipAnimator.GetBool("InTransition"))
+        {
+            var animStateInfo = footerAnimator.GetCurrentAnimatorStateInfo(0);
+            var NTime = animStateInfo.normalizedTime;
+
+            var animStateInfo2 = headerAnimator.GetCurrentAnimatorStateInfo(0);
+            var NTime2 = animStateInfo.normalizedTime;
+
+            if (NTime > 1.0f)
+            {
+                spaceshipAnimator.SetBool("InTransition", true);
+
+            }
+
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(0.5f);
+        playeLightSpeedAnimation = true;
+        beginSpaceshipAnimation?.Invoke();
+
+        yield return new WaitForSeconds(2);
+
+        imageCreator.gameObject.SetActive(false);
+        StartCoroutine(ImageRequest());
+
+        /*  while (playeLightSpeedAnimation == false)
+          {
+              foreach (AnimationClip clip in spaceshipAnimator.runtimeAnimatorController.animationClips)
+              {
+                  if (clip.name == "SpaceShip_LightSpeed") 
+                  {
+                      playeLightSpeedAnimation = true;
+                      beginSpaceshipAnimation?.Invoke();
+                  }
+              }
+
+              yield return null;
+          }*/
+    }
+
 
     private IEnumerator ImageRequest()
     {
