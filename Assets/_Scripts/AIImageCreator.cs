@@ -29,8 +29,8 @@ public class AIImageCreator : MonoBehaviour
 
     [SerializeField]
     private RawImage rawImage = null;
-    [SerializeField]
-    private Texture loadingTexture = null;
+    // [SerializeField]
+    //private Texture loadingTexture = null;
     [SerializeField]
     private Texture errorTexture = null;
 
@@ -41,9 +41,18 @@ public class AIImageCreator : MonoBehaviour
     private string editImageURL = string.Empty;
     private string[] imageSizeOptions = { "256x256", "512x512", "1024x1024" };
     private int currentImageIndex = 2;
-    private const string apiKey = "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";
+    private const string apiKey = "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";
     private const string createImageAPIURL = "https://api.openai.com/v1/images/generations";
     private const string editImageAPIURL = "https://api.openai.com/v1/images/edits";
+
+    [Header("Visual Effects")]
+    [SerializeField] private GameObject imageGeneratorPanel;
+    [SerializeField] private DissolveController dissolveController;
+    [SerializeField] private ImageGenerationUIManager imageGenerationUIManager;
+    [SerializeField] private Animator imagePanelAnimator;
+
+    public delegate void NewImageRequest();
+    public static NewImageRequest newImageRequest;
 
     public int GetCurrentImageIndex()
     {
@@ -68,9 +77,9 @@ public class AIImageCreator : MonoBehaviour
 
     private void OnEnable()
     {
-        Loading.StartLoading();
+        //   Loading.StartLoading();
 
-        rawImage.texture = loadingTexture;
+        //  rawImage.texture = loadingTexture;
 
         if (string.IsNullOrEmpty(editImageURL) == true)
         {
@@ -113,19 +122,19 @@ public class AIImageCreator : MonoBehaviour
             case UnityWebRequest.Result.ConnectionError:
                 Debug.LogError("Connection Error: " + request.error);
                 rawImage.texture = errorTexture;
-                Loading.StopLoading();
+                // Loading.StopLoading();
                 break;
 
             case UnityWebRequest.Result.DataProcessingError:
                 Debug.LogError("Data Processing Error: " + request.error);
                 rawImage.texture = errorTexture;
-                Loading.StopLoading();
+                //Loading.StopLoading();
                 break;
 
             case UnityWebRequest.Result.ProtocolError:
                 Debug.LogError("HTTP Error: " + request.error);
                 rawImage.texture = errorTexture;
-                Loading.StopLoading();
+                //  Loading.StopLoading();
                 break;
 
             case UnityWebRequest.Result.Success:
@@ -150,9 +159,29 @@ public class AIImageCreator : MonoBehaviour
         else
         {
             Debug.Log("Get Texture Result: " + www.result);
+            imageGeneratorPanel.SetActive(true);
+            imagePanelAnimator.SetBool("InTransition", true);
+
+            dissolveController.ImageActivated();
+            newImageRequest?.Invoke();
             rawImage.texture = ((DownloadHandlerTexture)www.downloadHandler).texture;
         }
 
-        Loading.StopLoading();
+        //Loading.StopLoading();
+    }
+
+    public void SubmitNewRequest()
+    {
+        imagePanelAnimator.SetBool("InTransition", false);
+        imageGeneratorPanel.SetActive(false);
+        imageGenerationUIManager.ResetTransitionAnimations();
+    }
+
+    public void ReSubmitRequest()
+    {
+        imagePanelAnimator.SetBool("InTransition", false);
+        imageGeneratorPanel.SetActive(false);
+        imageGenerationUIManager.ResetSpaceshipAnimation();
+        imageGenerationUIManager.SubmitRequest();
     }
 }
