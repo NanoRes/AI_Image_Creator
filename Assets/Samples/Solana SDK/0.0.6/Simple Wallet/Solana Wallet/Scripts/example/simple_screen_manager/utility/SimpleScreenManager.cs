@@ -21,7 +21,6 @@ namespace Solana.Unity.SDK.Example
             var ratioFitter = gameObject.GetComponent<AspectRatioFitter>();
             if (Screen.width > Screen.height)
             {
-
                 if (ratioFitter == null)
                 {
                     ratioFitter = gameObject.AddComponent<AspectRatioFitter>();

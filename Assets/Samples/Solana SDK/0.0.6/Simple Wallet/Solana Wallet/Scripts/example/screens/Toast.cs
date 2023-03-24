@@ -65,7 +65,7 @@ public class Toast : MonoBehaviour
         {
             counter += Time.deltaTime;
             var alpha = Mathf.Lerp(a, b, counter / duration);
-            targetText.color = new Color(currentColor.r, currentColor.g, currentColor.b, alpha);
+            targetText.color = Color.red;
             yield return null;
         }
     }

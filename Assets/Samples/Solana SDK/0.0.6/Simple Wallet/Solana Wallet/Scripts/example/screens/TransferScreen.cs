@@ -19,6 +19,7 @@ namespace Solana.Unity.SDK.Example
         public Button transferBtn;
         public RawImage nftImage;
         public Button closeBtn;
+        public Texture dogelanaTexture = null;
 
         private TokenAccount _transferTokenAccount;
         private Nft.Nft _nft;
@@ -143,6 +144,7 @@ namespace Solana.Unity.SDK.Example
             nftImage.gameObject.SetActive(false);
             nftTitleTxt.gameObject.SetActive(false);
             ownedAmountTxt.gameObject.SetActive(false);
+
             if (data != null && data.GetType() == typeof(Tuple<TokenAccount, TokenDef, Texture2D>))
             {
                 var (tokenAccount, tokenDef, texture) = (Tuple<TokenAccount, TokenDef, Texture2D>)data;

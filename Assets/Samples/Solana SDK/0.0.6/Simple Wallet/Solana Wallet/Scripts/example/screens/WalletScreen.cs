@@ -15,38 +15,36 @@ namespace Solana.Unity.SDK.Example
     public class WalletScreen : SimpleScreen
     {
         [SerializeField]
-        private TextMeshProUGUI lamports;
+        private TextMeshProUGUI lamports = null;
         [SerializeField]
-        private TextMeshProUGUI dogelanaTokenTotal;
+        private TextMeshProUGUI dogelanaTokenTotal = null;
         [SerializeField]
-        private Button refreshBtn;
+        private Button refreshBtn = null;
         [SerializeField]
-        private Button sendSolBtn;
+        private Button sendSolBtn = null;
         [SerializeField]
-        private Button sendDGLNBtn;
+        private Button sendDGLNBtn = null;
         [SerializeField]
-        private Button swapBtn;
+        private Button swapBtn = null;
         [SerializeField]
-        private Button logoutBtn;
+        private Button logoutBtn = null;
         [SerializeField]
-        private Button saveMnemonicsBtn;
+        private Button saveMnemonicsBtn = null;
         [SerializeField]
-        private Button savePublicKeyBtn;
+        private Button savePublicKeyBtn = null;
         [SerializeField]
-        private Button savePrivateKeyBtn;
+        private Button savePrivateKeyBtn = null;
         [SerializeField]
-        private Button qrCodeBtn;
+        private Button qrCodeBtn = null;
         [SerializeField]
-        private Texture theDGLNLogo;
+        private Texture theDGLNLogo = null;
 
-        public SimpleScreenManager parentManager;
-
-        public TextMeshProUGUI publicKey_txt;
-        public RawImage qrCode_img;
+        public TextMeshProUGUI publicKey_txt = null;
+        public RawImage qrCode_img = null;
 
         private ulong totalDGLNTokens = 0;
-        private CancellationTokenSource _stopTask;
-        private static TokenMintResolver _tokenResolver;
+        private CancellationTokenSource _stopTask = null;
+        private static TokenMintResolver _tokenResolver = null;
 
         public void Start()
         {
@@ -71,8 +69,6 @@ namespace Solana.Unity.SDK.Example
             {
                 Web3.Instance.Logout();
                 manager.ShowScreen(this, "login_screen");
-                if(parentManager != null)
-                    parentManager.ShowScreen(this, "[Connect_Wallet_Screen]");
             });
 
             qrCodeBtn.onClick.AddListener(SavePublicKeyOnClick);
@@ -117,6 +113,8 @@ namespace Solana.Unity.SDK.Example
 
         private void OnEnable()
         {
+            gameObject.GetComponent<Toast>()?.ShowToast("", 1);
+
             Loading.StopLoading();
 
             var hasPrivateKey = !string.IsNullOrEmpty(Web3.Instance.Wallet?.Account.PrivateKey);
