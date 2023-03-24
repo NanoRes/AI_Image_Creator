@@ -25,9 +25,7 @@ namespace Solana.Unity.SDK.Example
         private Button loginBtnXNFT = null;
         [SerializeField]
         private TextMeshProUGUI messageTxt = null;
-        [SerializeField]
-        private TMP_Dropdown dropdownRpcCluster = null;
-        [SerializeField]
+
         private GameObject wallet = null;
 
         private void Awake()
@@ -37,7 +35,6 @@ namespace Solana.Unity.SDK.Example
 
         private void OnEnable()
         {
-            dropdownRpcCluster.interactable = true;
             passwordInputField.text = string.Empty;
         }
 
@@ -122,7 +119,6 @@ namespace Solana.Unity.SDK.Example
         {
             if (account != null)
             {
-                dropdownRpcCluster.interactable = false;
                 manager.ShowScreen(this, "wallet_screen");
                 messageTxt.gameObject.SetActive(false);
                 gameObject.SetActive(false);

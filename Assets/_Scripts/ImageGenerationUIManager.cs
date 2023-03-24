@@ -302,11 +302,11 @@ public class ImageGenerationUIManager : MonoBehaviour
         string toWalletAddress = defaultToAddress;
         long playmentInSOL = pricingInLamports;
 
-        if (RemoteConfig.info != null)
-        {
-            playmentInSOL = RemoteConfig.info.PricingInLamports;
-            toWalletAddress = RemoteConfig.info.PayToSOLWallet;
-        }
+        //if (RemoteConfig.info != null)
+        //{
+        //    playmentInSOL = RemoteConfig.info.PricingInLamports;
+        //    toWalletAddress = RemoteConfig.info.PayToSOLWallet;
+        //}
 
         TransactionBuilder txBuilder = new TransactionBuilder()
             .SetRecentBlockHash(blockhash)
@@ -323,11 +323,11 @@ public class ImageGenerationUIManager : MonoBehaviour
         string toWalletAddress = defaultToDGLNAddress;
         long playmentInDGLN = pricingInDGLN;
 
-        if (RemoteConfig.info != null)
-        {
-            playmentInDGLN = RemoteConfig.info.PricingInDGLN;
-            toWalletAddress = RemoteConfig.info.PayToDGLNWallet;
-        }
+        //if (RemoteConfig.info != null)
+        //{
+        //    playmentInDGLN = RemoteConfig.info.PricingInDGLN;
+        //    toWalletAddress = RemoteConfig.info.PayToDGLNWallet;
+        //}
 
         TransactionBuilder txBuilder = new TransactionBuilder()
             .SetRecentBlockHash(blockhash)

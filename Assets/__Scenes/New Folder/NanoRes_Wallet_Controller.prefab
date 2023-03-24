@@ -58,7 +58,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rpcCluster: 3
-  customRpc: https://red-boldest-uranium.solana-mainnet.quiknode.pro/190d71a30ba3170f66df5e49c8c88870737cd5ce/
+  customRpc: https://red-red-thunder.solana-mainnet.discover.quiknode.pro/9b7af92f775a1a5122f12aec15a56d6dc8616c10/
   autoConnectOnStartup: 1
   webSocketsRpc: 
   web3AuthWalletOptions:
@@ -69,7 +69,7 @@ MonoBehaviour:
     dark: 1
     themeName: primary
     themeColor: '#123456'
-    redirectUrl: https://nanores.fun/
+    redirectUrl: https://www.nanores.fun/
     clientId: 
   phantomWalletOptions:
     phantomApiVersion: v1

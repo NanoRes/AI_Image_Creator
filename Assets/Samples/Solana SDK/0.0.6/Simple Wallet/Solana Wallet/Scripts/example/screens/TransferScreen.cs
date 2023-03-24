@@ -7,8 +7,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// ReSharper disable once CheckNamespace
-
 namespace Solana.Unity.SDK.Example
 {
     public class TransferScreen : SimpleScreen
@@ -188,5 +186,4 @@ namespace Solana.Unity.SDK.Example
             gameObject.SetActive(false);
         }
     }
-
 }

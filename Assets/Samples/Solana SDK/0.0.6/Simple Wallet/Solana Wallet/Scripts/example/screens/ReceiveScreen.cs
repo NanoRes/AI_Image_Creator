@@ -13,8 +13,7 @@ public class ReceiveScreen : SimpleScreen
     public Button airdrop_btn;
     public Button close_btn;
 
-    public TextMeshProUGUI publicKey_txt;
-    public RawImage qrCode_img;
+    
 
     private void Start()
     {
@@ -40,8 +39,7 @@ public class ReceiveScreen : SimpleScreen
 
         CheckAndToggleAirdrop();
 
-        GenerateQr();
-        publicKey_txt.text = Web3.Instance.Wallet.Account.PublicKey;
+        
     }
 
     private void CheckAndToggleAirdrop()
@@ -49,11 +47,7 @@ public class ReceiveScreen : SimpleScreen
         airdrop_btn.gameObject.SetActive(!Web3.Instance.Wallet.ActiveRpcClient.ToString().Contains("api.mainnet"));
     }
 
-    private void GenerateQr()
-    {
-        Texture2D tex = QRGenerator.GenerateQRTexture(Web3.Instance.Wallet.Account.PublicKey, 256, 256);
-        qrCode_img.texture = tex;
-    }
+    
 
     private async void RequestAirdrop()
     {

@@ -10,8 +10,6 @@ using Cysharp.Threading.Tasks;
 using Solana.Unity.Extensions;
 using Solana.Unity.Rpc.Types;
 
-// ReSharper disable once CheckNamespace
-
 namespace Solana.Unity.SDK.Example
 {
     public class WalletScreen : SimpleScreen
@@ -19,11 +17,13 @@ namespace Solana.Unity.SDK.Example
         [SerializeField]
         private TextMeshProUGUI lamports;
         [SerializeField]
+        private TextMeshProUGUI dogelanaTokenTotal;
+        [SerializeField]
         private Button refreshBtn;
         [SerializeField]
-        private Button sendBtn;
+        private Button sendSolBtn;
         [SerializeField]
-        private Button receiveBtn;
+        private Button sendDGLNBtn;
         [SerializeField]
         private Button swapBtn;
         [SerializeField]
@@ -31,33 +31,37 @@ namespace Solana.Unity.SDK.Example
         [SerializeField]
         private Button saveMnemonicsBtn;
         [SerializeField]
+        private Button savePublicKeyBtn;
+        [SerializeField]
         private Button savePrivateKeyBtn;
-        
         [SerializeField]
-        private GameObject tokenItem;
+        private Button qrCodeBtn;
         [SerializeField]
-        private Transform tokenContainer;
+        private Texture theDGLNLogo;
 
         public SimpleScreenManager parentManager;
 
+        public TextMeshProUGUI publicKey_txt;
+        public RawImage qrCode_img;
+
+        private ulong totalDGLNTokens = 0;
         private CancellationTokenSource _stopTask;
-        private List<TokenItem> _instantiatedTokens = new();
         private static TokenMintResolver _tokenResolver;
 
         public void Start()
         {
             refreshBtn.onClick.AddListener(RefreshWallet);
 
-            sendBtn.onClick.AddListener(() =>
+            sendSolBtn.onClick.AddListener(() =>
             {
                 TransitionToTransfer();
             });
 
-            receiveBtn.onClick.AddListener(() =>
+            sendDGLNBtn.onClick.AddListener(() =>
             {
-                manager.ShowScreen(this, "receive_screen");
+                TransitionToTransfer();
             });
-            
+
             swapBtn.onClick.AddListener(() =>
             {
                 manager.ShowScreen(this, "swap_screen");
@@ -70,7 +74,9 @@ namespace Solana.Unity.SDK.Example
                 if(parentManager != null)
                     parentManager.ShowScreen(this, "[Connect_Wallet_Screen]");
             });
-            
+
+            qrCodeBtn.onClick.AddListener(SavePublicKeyOnClick);
+            savePublicKeyBtn.onClick.AddListener(SavePublicKeyOnClick);
             savePrivateKeyBtn.onClick.AddListener(SavePrivateKeyOnClick);
             saveMnemonicsBtn.onClick.AddListener(SaveMnemonicsOnClick);
 
@@ -87,6 +93,22 @@ namespace Solana.Unity.SDK.Example
             );
         }
 
+        private void GenerateQr()
+        {
+            if(Web3.Instance.Wallet == null)
+            {
+                return;
+            }
+
+            if (Web3.Instance.Wallet.Account == null)
+            {
+                return;
+            }
+
+            Texture2D tex = QRGenerator.GenerateQRTexture(Web3.Instance.Wallet.Account.PublicKey, 256, 256);
+            qrCode_img.texture = tex;
+        }
+
         private void RefreshWallet()
         {
             UpdateWalletBalanceDisplay().AsUniTask().Forget();
@@ -96,10 +118,19 @@ namespace Solana.Unity.SDK.Example
         private void OnEnable()
         {
             Loading.StopLoading();
+
             var hasPrivateKey = !string.IsNullOrEmpty(Web3.Instance.Wallet?.Account.PrivateKey);
             savePrivateKeyBtn.gameObject.SetActive(hasPrivateKey);
             var hasMnemonics = !string.IsNullOrEmpty(Web3.Instance.Wallet?.Mnemonic?.ToString());
             saveMnemonicsBtn.gameObject.SetActive(hasMnemonics);
+        }
+
+        private void SavePublicKeyOnClick()
+        {
+            if (!gameObject.activeSelf) return;
+            if (string.IsNullOrEmpty(Web3.Instance.Wallet.Account.PublicKey?.ToString())) return;
+            Clipboard.Copy(Web3.Instance.Wallet.Account.PublicKey.ToString());
+            gameObject.GetComponent<Toast>()?.ShowToast("Public Key Copied!", 3);
         }
 
         private void SavePrivateKeyOnClick()
@@ -107,7 +138,7 @@ namespace Solana.Unity.SDK.Example
             if (!gameObject.activeSelf) return;
             if (string.IsNullOrEmpty(Web3.Instance.Wallet.Account.PrivateKey?.ToString())) return;
             Clipboard.Copy(Web3.Instance.Wallet.Account.PrivateKey.ToString());
-            gameObject.GetComponent<Toast>()?.ShowToast("Private Key copied to clipboard", 3);
+            gameObject.GetComponent<Toast>()?.ShowToast("Private Key Copied!", 3);
         }
         
         private void SaveMnemonicsOnClick()
@@ -115,7 +146,7 @@ namespace Solana.Unity.SDK.Example
             if (!gameObject.activeSelf) return;
             if (string.IsNullOrEmpty(Web3.Instance.Wallet.Mnemonic?.ToString())) return;
             Clipboard.Copy(Web3.Instance.Wallet.Mnemonic.ToString());
-            gameObject.GetComponent<Toast>()?.ShowToast("Mnemonics copied to clipboard", 3);
+            gameObject.GetComponent<Toast>()?.ShowToast("Mnemonics Copied!", 3);
         }
 
         private void TransitionToTransfer(object data = null)
@@ -126,60 +157,36 @@ namespace Solana.Unity.SDK.Example
         private async Task UpdateWalletBalanceDisplay()
         {
             if (Web3.Instance.Wallet.Account is null) return;
+
             var sol = await Web3.Base.GetBalance(Commitment.Confirmed);
             MainThreadDispatcher.Instance().Enqueue(() =>
             {
                 lamports.text = $"{sol}";
             });
+
+            GenerateQr();
+            publicKey_txt.text = Web3.Instance.Wallet.Account.PublicKey;
         }
 
         private async UniTask GetOwnedTokenAccounts()
         {
             var tokens = await Web3.Base.GetTokenAccounts(Commitment.Confirmed);
-            // Remove tokens not owned anymore and update amounts
-            var tkToRemove = new List<TokenItem>();
-            _instantiatedTokens.ForEach(tk =>
-            {
-                var tokenInfo = tk.TokenAccount.Account.Data.Parsed.Info;
-                var match = tokens.Where(t => t.Account.Data.Parsed.Info.Mint == tokenInfo.Mint).ToArray();
-                if (match.Length == 0 || match.Any(m => m.Account.Data.Parsed.Info.TokenAmount.AmountUlong == 0))
-                {
-                    tkToRemove.Add(tk);
-                    Destroy(tk.gameObject);
-                    _instantiatedTokens.Remove(tk);
-                }
-                else
-                {
-                    var newAmount = match[0].Account.Data.Parsed.Info.TokenAmount.UiAmountString;
-                    tk.UpdateAmount(newAmount);
-                }
-            });
-            tkToRemove.ForEach(tk => _instantiatedTokens.Remove(tk));
-            // Add new tokens
             if (tokens is {Length: > 0})
             {
                 var tokenAccounts = tokens.OrderByDescending(
                     tk => tk.Account.Data.Parsed.Info.TokenAmount.AmountUlong);
                 foreach (var item in tokenAccounts)
                 {
-                    if (!(item.Account.Data.Parsed.Info.TokenAmount.AmountUlong > 0)) break;
-                    if (_instantiatedTokens.All(t => t.TokenAccount.Account.Data.Parsed.Info.Mint != item.Account.Data.Parsed.Info.Mint))
+                    if (item.Account.Data.Parsed.Info.Mint !=
+                        "E6UU5M1z4CvSAAF99d9wRoXsasWMEXsvHrz3JQRXtm2X")
                     {
-                        var tk = Instantiate(tokenItem, tokenContainer, true);
-                        tk.transform.localScale = Vector3.one;
-
-                        Nft.Nft.TryGetNftData(item.Account.Data.Parsed.Info.Mint,
-                            Web3.Instance.Wallet.ActiveRpcClient).AsUniTask().ContinueWith(nft =>
-                        {
-                            TokenItem tkInstance = tk.GetComponent<TokenItem>();
-                            _instantiatedTokens.Add(tkInstance);
-                            tk.SetActive(true);
-                            if (tkInstance)
-                            {
-                                tkInstance.InitializeData(item, this, nft).Forget();
-                            }
-                        }).Forget();
+                        break;
                     }
+
+                    totalDGLNTokens = item.Account.Data.Parsed.Info.TokenAmount.AmountUlong;
+                    float finalDGLNFormat = totalDGLNTokens * 0.000000001f;
+                    dogelanaTokenTotal.text = finalDGLNFormat.ToString();
+                    break;
                 }
             }
         }
@@ -212,12 +219,10 @@ namespace Solana.Unity.SDK.Example
             wallet.SetActive(false);
         }
 
-
         private void OnDestroy()
         {
             if (_stopTask is null) return;
             _stopTask.Cancel();
         }
-
     }
 }
