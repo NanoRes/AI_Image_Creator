@@ -10,6 +10,8 @@ using Solana.Unity.Extensions;
 using Solana.Unity.Rpc.Types;
 using System;
 using Solana.Unity.Rpc.Models;
+using System.Collections;
+using Org.BouncyCastle.Ocsp;
 
 namespace Solana.Unity.SDK.Example
 {
@@ -48,10 +50,15 @@ namespace Solana.Unity.SDK.Example
         [SerializeField]
         private RawImage qrCodeImage = null;
 
-        private ulong totalDGLNTokens = 0;
+        private bool hasInitialRefreshOccurred = false;
         private CancellationTokenSource _stopTask = null;
 
         private static TokenMintResolver _tokenResolver = null;
+
+        private void Awake()
+        {
+            hasInitialRefreshOccurred = false;
+        }
 
         public void Start()
         {
@@ -59,11 +66,13 @@ namespace Solana.Unity.SDK.Example
 
             sendSolBtn.onClick.AddListener(() =>
             {
+                applicationData.currentTransferMethodSelected = ApplicationData.PaymentMethod.SOL;
                 TransitionToTransfer();
             });
 
             sendDGLNBtn.onClick.AddListener(() =>
             {
+                applicationData.currentTransferMethodSelected = ApplicationData.PaymentMethod.DGLN;
                 TransitionToTransfer();
             });
 
@@ -74,6 +83,8 @@ namespace Solana.Unity.SDK.Example
 
             logoutBtn.onClick.AddListener(() =>
             {
+                hasInitialRefreshOccurred = false;
+                userData.ResetData();
                 Web3.Instance.Logout();
                 manager.ShowScreen(this, "login_screen");
             });
@@ -91,7 +102,21 @@ namespace Solana.Unity.SDK.Example
                 {
                     Debug.Log("Account changed!, updated lamport: " 
                         + accountInfo.Value.Lamports);
-                    RefreshWallet();
+                    lamports.text = $"{ accountInfo.Value.Lamports * 0.000000001f }";
+                    userData.totalSolanaTokens = accountInfo.Value.Lamports * 0.000000001f;
+                },
+                Commitment.Confirmed
+            );
+
+            Web3.WsRpc.SubscribeTokenAccount(
+                "8UxoXccJjiSMjPuP77BCM5mVx1tqBWVyo8RcHa1jasnS",
+                (_, tokenInfo) =>
+                {
+                    Debug.Log("Account changed!, updated token account: "
+                        + tokenInfo.Value.Data.Parsed.Info.TokenAmount.ToString());
+                    userData.totalDogelanaTokens = tokenInfo.Value.Data.Parsed.Info.TokenAmount.AmountUlong;
+                    float finalDGLNFormat = userData.totalDogelanaTokens ;
+                    dogelanaTokenTotal.text = finalDGLNFormat.ToString();
                 },
                 Commitment.Confirmed
             );
@@ -116,21 +141,19 @@ namespace Solana.Unity.SDK.Example
 
         private void RefreshWallet()
         {
+            publicKeyText.text = Web3.Instance.Wallet.Account.PublicKey;
+            GenerateQr();
+
             UpdateWalletBalanceDisplay().AsUniTask().Forget();
-            GetOwnedTokenAccounts().AsAsyncUnitUniTask().Forget();
+            ShowDGLNBalance().AsUniTask().Forget();
+            //GetOwnedTokenAccounts().AsUniTask().Forget();
         }
 
         private void OnEnable()
         {
             gameObject.GetComponent<Toast>()?.ShowToast("", 1);
 
-            Loading.StopLoading();
-
-            var hasPrivateKey = !string.IsNullOrEmpty(Web3.Instance.Wallet?.Account.PrivateKey);
-            savePrivateKeyBtn.gameObject.SetActive(hasPrivateKey);
-
-            var hasMnemonics = !string.IsNullOrEmpty(Web3.Instance.Wallet?.Mnemonic?.ToString());
-            saveMnemonicsBtn.gameObject.SetActive(hasMnemonics);
+            Loading.StopLoading();   
         }
 
         private void SavePublicKeyOnClick()
@@ -179,41 +202,62 @@ namespace Solana.Unity.SDK.Example
                 lamports.text = $"{sol}";
                 userData.totalSolanaTokens = sol;
             });
-
-            GenerateQr();
-
-            publicKeyText.text = Web3.Instance.Wallet.Account.PublicKey;
         }
 
-        private async UniTask GetOwnedTokenAccounts()
+        private IEnumerator ShowDGLNTokens(TokenAccount[] tokenAccounts)
         {
-            TokenAccount[] tokens = await Web3.Base.GetTokenAccounts(
-                new Wallet.PublicKey(applicationData.mintDGLNAddress),
-                new Wallet.PublicKey(applicationData.tokenProgramID));
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForEndOfFrame();
 
-            if (tokens is {Length: > 0})
+            if (tokenAccounts.Length <= 0)
             {
-                Debug.Log(tokens.Length);
-
-                var tokenAccounts = tokens.OrderByDescending(
-                    tk => tk.Account.Data.Parsed.Info.TokenAmount.AmountUlong);
-
-                foreach (var item in tokenAccounts)
-                {
-                    Debug.Log(item.PublicKey);
-
-                    if (item.Account.Data.Parsed.Info.Mint != applicationData.mintDGLNAddress)
-                    {
-                        continue;
-                    }
-
-                    totalDGLNTokens = item.Account.Data.Parsed.Info.TokenAmount.AmountUlong;
-                    float finalDGLNFormat = totalDGLNTokens * 0.000000001f;
-                    dogelanaTokenTotal.text = finalDGLNFormat.ToString();
-
-                    break;
-                }
+                yield break;
             }
+
+            foreach (var tokenAccount in tokenAccounts)
+            {
+                if (tokenAccount.Account.Data.Parsed.Info.Mint != applicationData.mintDGLNAddress)
+                {
+                    continue;
+                }
+
+                userData.totalDogelanaTokens = tokenAccount.Account.Data.Parsed.Info.
+                    TokenAmount.AmountUlong;
+                float finalDGLNFormat = userData.totalDogelanaTokens * 0.000000001f;
+                dogelanaTokenTotal.text = finalDGLNFormat.ToString();
+
+                userData.dogelanaTokenAddress = tokenAccount.PublicKey;
+                Debug.Log("Dogelana Token Account Public Key: " + tokenAccount.PublicKey);
+
+                yield break;
+            }
+        }
+
+        private IEnumerator ShowDGLNBalance(TokenBalance tokenBalance)
+        {
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForEndOfFrame();
+
+            userData.totalDogelanaTokens = tokenBalance.AmountUlong;
+            float finalDGLNFormat = userData.totalDogelanaTokens * 0.000000001f;
+            dogelanaTokenTotal.text = finalDGLNFormat.ToString();
+        }
+
+        private async Task ShowDGLNBalance()
+        {
+            TokenBalance tokenBalance = await Web3.Base.GetTokenBalanceByOwnerAsync(
+                new Wallet.PublicKey(applicationData.mintDGLNAddress));
+
+            MainThreadDispatcher.Instance().Enqueue(ShowDGLNBalance(tokenBalance));
+        }
+
+        private async Task GetOwnedTokenAccounts()
+        {
+            TokenAccount[] tokenBalance = await Web3.Base.GetTokenAccounts(
+                new Wallet.PublicKey(applicationData.mintDGLNAddress),
+                null);
+
+            MainThreadDispatcher.Instance().Enqueue(ShowDGLNTokens(tokenBalance));
         }
         
         public static async UniTask<TokenMintResolver> GetTokenMintResolver()
@@ -232,9 +276,42 @@ namespace Solana.Unity.SDK.Example
             base.ShowScreen();
 
             gameObject.SetActive(true);
+            lamports.text = string.Empty;
+            dogelanaTokenTotal.text = string.Empty;
+            publicKeyText.text = string.Empty;
+
+            lamports.text = $"{ userData.totalSolanaTokens }";
+            dogelanaTokenTotal.text = (userData.totalDogelanaTokens * 0.000000001f).ToString();
+
+            publicKeyText.text = Web3.Instance.Wallet.Account.PublicKey;
+
+            if(hasInitialRefreshOccurred == true)
+            {
+                return;
+            }
+            hasInitialRefreshOccurred = true;
+
+            GenerateQr();
+
+            MainThreadDispatcher.Instance().Enqueue(DelayRefreshingData());
+        }
+
+        private IEnumerator DelayRefreshingData()
+        {
+            yield return new WaitForSeconds(1f);
+
+            publicKeyText.text = Web3.Instance.Wallet.Account.PublicKey;
+            GenerateQr();
 
             UpdateWalletBalanceDisplay().AsUniTask().Forget();
-            GetOwnedTokenAccounts().Forget();
+            //ShowDGLNBalance().AsUniTask().Forget();
+            GetOwnedTokenAccounts().AsUniTask().Forget();
+
+            var hasPrivateKey = !string.IsNullOrEmpty(Web3.Instance.Wallet?.Account.PrivateKey);
+            savePrivateKeyBtn.gameObject.SetActive(hasPrivateKey);
+
+            var hasMnemonics = !string.IsNullOrEmpty(Web3.Instance.Wallet?.Mnemonic?.ToString());
+            saveMnemonicsBtn.gameObject.SetActive(hasMnemonics);
         }
 
         public override void HideScreen()

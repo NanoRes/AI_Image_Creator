@@ -48,7 +48,7 @@ namespace Solana.Unity.SDK.Example
                 await UniTask.SwitchToMainThread();
                 _nft = nftData;
                 ammount_txt.text = "";
-                pub_txt.text = nftData.metaplexData.data.name;
+                pub_txt.text = nftData.metaplexData.data.metadata.name;
 
                 if (logo != null)
                 {
@@ -60,7 +60,7 @@ namespace Solana.Unity.SDK.Example
                 ammount_txt.text =
                     tokenAccount.Account.Data.Parsed.Info.TokenAmount.AmountDecimal.ToString(CultureInfo
                         .CurrentCulture);
-                pub_txt.text = nftData?.metaplexData?.data?.symbol ?? tokenAccount.Account.Data.Parsed.Info.Mint;
+                pub_txt.text = nftData?.metaplexData?.data?.metadata.symbol ?? tokenAccount.Account.Data.Parsed.Info.Mint;
                 var tokenMintResolver = await WalletScreen.GetTokenMintResolver();
                 _tokenDef = tokenMintResolver.Resolve(tokenAccount.Account.Data.Parsed.Info.Mint);
                 await UniTask.SwitchToMainThread();

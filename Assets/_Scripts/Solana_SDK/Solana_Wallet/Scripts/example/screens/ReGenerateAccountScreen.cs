@@ -37,14 +37,6 @@ namespace Solana.Unity.SDK.Example
                 generateBtn.onClick.AddListener(GenerateNewAccount);
             }
 
-            if(backBtn != null)
-            {
-                backBtn.onClick.AddListener(() =>
-                {
-                    manager.ShowScreen(this, "generate_screen");
-                });
-            }
-
             loadMnemonicsBtn.onClick.AddListener(PasteMnemonicsClicked);
         }
 
@@ -52,6 +44,18 @@ namespace Solana.Unity.SDK.Example
         {
             var password = passwordInputField.text;
             var mnemonic = mnemonicTxt.text;
+
+            if (mnemonic == string.Empty)
+            {
+                errorTxt.text = "Please Enter A Secret Recovery Phrase";
+                return;
+            }
+
+            if (password == string.Empty)
+            {
+                errorTxt.text = "Please Enter A Password";
+                return;
+            }
 
             var account = await Web3.Instance.CreateAccount(mnemonic, password);
             if (account != null)

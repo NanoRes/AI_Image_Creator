@@ -33,7 +33,13 @@ public class AIImageCreator : MonoBehaviour
         imagePanelAnimator.SetBool("InTransition", false);
         imageGeneratorPanel.SetActive(false);
         imageGenerationUIManager.ResetSpaceshipAnimation();
+
         imageGenerationUIManager.SubmitRequest();
+    }
+
+    public void ShareButtonPressed()
+    {
+        GoToImageURL();
     }
 
     public void SetPrompt(string newPrompt)
@@ -92,14 +98,23 @@ public class AIImageCreator : MonoBehaviour
         {
             case UnityWebRequest.Result.ConnectionError:
                 Debug.LogError("Connection Error: " + request.error);
+                GoBackToHome();
+                imageGenerationUIManager.SetErrorText("Connection Error: " + request.error);
+                applicationData.currentCreatedImageURL = string.Empty;
                 break;
 
             case UnityWebRequest.Result.DataProcessingError:
                 Debug.LogError("Data Processing Error: " + request.error);
+                GoBackToHome();
+                imageGenerationUIManager.SetErrorText("Data Processing Error: " + request.error);
+                applicationData.currentCreatedImageURL = string.Empty;
                 break;
 
             case UnityWebRequest.Result.ProtocolError:
                 Debug.LogError("HTTP Error: " + request.error);
+                GoBackToHome();
+                imageGenerationUIManager.SetErrorText("HTTP Error: " + request.error);
+                applicationData.currentCreatedImageURL = string.Empty;
                 break;
 
             case UnityWebRequest.Result.Success:
@@ -122,11 +137,13 @@ public class AIImageCreator : MonoBehaviour
         if (www.result != UnityWebRequest.Result.Success)
         {
             Debug.LogError(www.error);
+            GoBackToHome();
+            imageGenerationUIManager.SetErrorText(string.Empty);
+            imageGenerationUIManager.SetBackUpURLButtonActive(true);
         }
         else
         {
             Debug.Log("Get Texture Result: " + www.result);
-
             RevealImage(www);
         }
     }
@@ -138,5 +155,13 @@ public class AIImageCreator : MonoBehaviour
         dissolveController.ImageActivated();
         newImageRequest?.Invoke();
         rawImage.texture = ((DownloadHandlerTexture)www.downloadHandler).texture;
+    }
+
+    public void GoBackToHome()
+    {
+        imagePanelAnimator.SetBool("InTransition", false);
+        imageGeneratorPanel.SetActive(false);
+        imageGenerationUIManager.ResetTransitionAnimations();
+        newImageRequest?.Invoke();
     }
 }

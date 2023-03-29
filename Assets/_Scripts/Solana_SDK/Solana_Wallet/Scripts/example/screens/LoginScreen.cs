@@ -78,8 +78,6 @@ namespace Solana.Unity.SDK.Example
             if (string.IsNullOrEmpty(savedPassword) == false)
             {
                 passwordInputField.SetTextWithoutNotify(savedPassword);
-                LoginChecker();
-                OnClose();
                 return;
             }
 #endif

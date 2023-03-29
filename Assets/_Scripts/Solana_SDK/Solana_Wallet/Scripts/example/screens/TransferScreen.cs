@@ -11,6 +11,9 @@ namespace Solana.Unity.SDK.Example
 {
     public class TransferScreen : SimpleScreen
     {
+        [SerializeField] private ApplicationData applicationData = null;
+        [SerializeField] private UserData userData = null;
+
         public TextMeshProUGUI ownedAmountTxt;
         public TextMeshProUGUI nftTitleTxt;
         public TextMeshProUGUI errorTxt;
@@ -19,11 +22,6 @@ namespace Solana.Unity.SDK.Example
         public Button transferBtn;
         public RawImage nftImage;
         public Button closeBtn;
-        public Texture dogelanaTexture = null;
-
-        private TokenAccount _transferTokenAccount;
-        private Nft.Nft _nft;
-        private double _ownedSolAmount;
         
         private const long SolLamports = 1000000000;
 
@@ -39,19 +37,19 @@ namespace Solana.Unity.SDK.Example
 
         private void TryTransfer()
         {
-            if (_nft != null)
-            {
-                TransferNft();
-            }
-            else if (_transferTokenAccount == null)
+            if (applicationData.currentTransferMethodSelected == ApplicationData.PaymentMethod.SOL)
             {
                 if (CheckInput())
+                {
                     TransferSol();
+                }
             }
-            else
+            else if (applicationData.currentTransferMethodSelected == ApplicationData.PaymentMethod.DGLN)
             {
                 if (CheckInput())
-                    TransferToken();
+                {
+                    TransferDogelana();
+                }
             }
         }
 
@@ -63,12 +61,12 @@ namespace Solana.Unity.SDK.Example
             HandleResponse(result);
         }
 
-        private async void TransferNft()
+        private async void TransferDogelana()
         {
             RequestResult<string> result = await Web3.Instance.Wallet.Transfer(
                 new PublicKey(toPublicTxt.text),
-                new PublicKey(_nft.metaplexData.mint),
-                1);
+                new PublicKey(applicationData.mintDGLNAddress),
+                Convert.ToUInt64(float.Parse(amountTxt.text) * 10000000));
             HandleResponse(result);
         }
 
@@ -86,33 +84,25 @@ namespace Solana.Unity.SDK.Example
                 return false;
             }
 
-            if (_transferTokenAccount == null)
+            if (applicationData.currentTransferMethodSelected == ApplicationData.PaymentMethod.SOL)
             {
-                if (float.Parse(amountTxt.text) > _ownedSolAmount)
+                if (float.Parse(amountTxt.text) > userData.totalSolanaTokens)
                 {
-                    errorTxt.text = "Not enough funds for transaction.";
+                    errorTxt.text = "Not enough SOL for this transaction.";
                     return false;
                 }
             }
-            else
+            else if (applicationData.currentTransferMethodSelected == ApplicationData.PaymentMethod.DGLN)
             {
-                if (long.Parse(amountTxt.text) > long.Parse(ownedAmountTxt.text))
+                if (ulong.Parse(amountTxt.text) > userData.totalDogelanaTokens)
                 {
-                    errorTxt.text = "Not enough funds for transaction.";
+                    errorTxt.text = "Not enough Dogelana for this transaction.";
                     return false;
                 }
             }
+
             errorTxt.text = "";
             return true;
-        }
-
-        private async void TransferToken()
-        {
-            RequestResult<string> result = await Web3.Instance.Wallet.Transfer(
-                new PublicKey(toPublicTxt.text),
-                new PublicKey(_transferTokenAccount.Account.Data.Parsed.Info.Mint),
-                ulong.Parse(amountTxt.text));
-            HandleResponse(result);
         }
 
         private void HandleResponse(RequestResult<string> result)
@@ -124,53 +114,28 @@ namespace Solana.Unity.SDK.Example
             }
         }
 
-        public override async void ShowScreen(object data = null)
+        public override void ShowScreen(object data = null)
         {
             base.ShowScreen();
 
             ResetInputFields();
-            await PopulateInfoFields(data);
             gameObject.SetActive(true);
+
+            if(applicationData.currentTransferMethodSelected == ApplicationData.PaymentMethod.SOL)
+            {
+                nftImage.texture = applicationData.solanaTexture;
+                nftTitleTxt.text = userData.totalSolanaTokens + "";
+            }
+            else if(applicationData.currentTransferMethodSelected == ApplicationData.PaymentMethod.DGLN)
+            {
+                nftImage.texture = applicationData.dogelanaTexture;
+                nftTitleTxt.text = (userData.totalDogelanaTokens * 0.000000001f) + "";
+            }
         }
-        
+
         public void OnClose()
         {
-            var wallet = GameObject.Find("Wallet");
-            wallet.SetActive(false);
-        }
-
-        private async System.Threading.Tasks.Task PopulateInfoFields(object data)
-        {
-            nftImage.gameObject.SetActive(false);
-            nftTitleTxt.gameObject.SetActive(false);
-            ownedAmountTxt.gameObject.SetActive(false);
-
-            if (data != null && data.GetType() == typeof(Tuple<TokenAccount, TokenDef, Texture2D>))
-            {
-                var (tokenAccount, tokenDef, texture) = (Tuple<TokenAccount, TokenDef, Texture2D>)data;
-                ownedAmountTxt.text = $"{tokenAccount.Account.Data.Parsed.Info.TokenAmount.Amount}";
-                nftTitleTxt.gameObject.SetActive(true);
-                nftImage.gameObject.SetActive(true);
-                nftTitleTxt.text = $"{tokenDef.Symbol}";
-                nftImage.texture = texture;
-                nftImage.color = Color.white;
-            }
-            else if (data != null && data.GetType() == typeof(Nft.Nft))
-            {
-                nftTitleTxt.gameObject.SetActive(true);
-                nftImage.gameObject.SetActive(true);
-                _nft = (Nft.Nft)data;
-                nftTitleTxt.text = $"{_nft.metaplexData.data.name}";
-                nftImage.texture = _nft.metaplexData?.nftImage?.file;
-                nftImage.color = Color.white;
-                amountTxt.text = "1";
-                amountTxt.interactable = false;
-            }
-            else
-            {
-                _ownedSolAmount = await Web3.Instance.Wallet.GetBalance();
-                ownedAmountTxt.text = $"{_ownedSolAmount}";
-            }
+            applicationData.isWalletOpen = false;
         }
 
         private void ResetInputFields()
@@ -184,7 +149,7 @@ namespace Solana.Unity.SDK.Example
         public override void HideScreen()
         {
             base.HideScreen();
-            _transferTokenAccount = null;
+
             gameObject.SetActive(false);
         }
     }

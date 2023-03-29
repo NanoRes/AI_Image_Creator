@@ -1,8 +1,9 @@
 {
   "dependencies": {
+    "com.solana.unity_sdk": "https://github.com/magicblock-labs/Solana.Unity-SDK.git",
     "com.unity.ide.visualstudio": "2.0.17",
-    "com.unity.remote-config": "3.2.2",
-    "com.unity.render-pipelines.universal": "12.1.8",
+    "com.unity.remote-config": "3.3.1",
+    "com.unity.render-pipelines.universal": "12.1.10",
     "com.unity.services.analytics": "4.4.1",
     "com.unity.textmeshpro": "3.0.6",
     "com.unity.timeline": "1.6.4",

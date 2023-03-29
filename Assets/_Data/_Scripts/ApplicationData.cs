@@ -21,13 +21,14 @@ public class ApplicationData : ScriptableObject
     public enum PaymentMethod { SOL, DGLN }
     
     public PaymentMethod currentPaymentMethodSelected = PaymentMethod.SOL;
+    public PaymentMethod currentTransferMethodSelected = PaymentMethod.SOL;
 
     public bool isWalletOpen = false;
     public bool isFreeForTesting = false;
 
     public int characterLimit = 1000;
-    public long pricingInLamports = 25000000;
-    public long pricingInDGLN = 25000000000000;
+    public ulong pricingInLamports = 25000000;
+    public ulong pricingInDGLN = 25000000000000;
 
     public string[] imageSizeOptions = { "256x256", "512x512", "1024x1024" };
     public int selectedImageSizeOptionIndex = 0;
@@ -37,6 +38,9 @@ public class ApplicationData : ScriptableObject
     public string toEditImageURL = string.Empty;
 
     public string currentCreatedImageURL = string.Empty;
+
+    public Texture dogelanaTexture = null;
+    public Texture solanaTexture = null;
 
     public string versionTextPrefix = "Version - ";
     public string transactionMemoStatement = "NanoRes Studios: AI Image Creator Purchase - v";

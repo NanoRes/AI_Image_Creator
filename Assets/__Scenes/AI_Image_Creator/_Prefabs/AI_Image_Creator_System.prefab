@@ -39,7 +39,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 50, y: -849.4196}
-  m_SizeDelta: {x: 508.7708, y: 130.8392}
+  m_SizeDelta: {x: 400, y: 130.8392}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5491378278373583655
 CanvasRenderer:
@@ -249,7 +249,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 50, y: -1003.18884}
-  m_SizeDelta: {x: 508.7708, y: 130.8392}
+  m_SizeDelta: {x: 580, y: 130.8392}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2149854497278707961
 CanvasRenderer:
@@ -411,7 +411,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: New
+  m_text: New Description
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: debe894442e153d479c7f9d07cce1276, type: 2}
   m_sharedMaterial: {fileID: 21975412471922176, guid: debe894442e153d479c7f9d07cce1276, type: 2}
@@ -595,7 +595,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 50, y: -1156.958}
-  m_SizeDelta: {x: 508.7708, y: 130.8392}
+  m_SizeDelta: {x: 750, y: 130.8392}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3408395209212538702
 CanvasRenderer:
@@ -681,7 +681,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 8757204920601548701}
         m_TargetAssemblyTypeName: AIImageCreator, Assembly-CSharp
-        m_MethodName: SubmitNewRequest
+        m_MethodName: ShareButtonPressed
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -958,7 +958,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Share
+  m_text: Open Then Save/Share
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: debe894442e153d479c7f9d07cce1276, type: 2}
   m_sharedMaterial: {fileID: 21975412471922176, guid: debe894442e153d479c7f9d07cce1276, type: 2}
@@ -1249,9 +1249,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a65ef99f2030bcb4fb0ad6b3506e8b47, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  applicationData: {fileID: 11400000, guid: 52ec0b9f10642944f8b7365eb1e26711, type: 2}
   rawImage: {fileID: 8757204921500188262}
-  errorTexture: {fileID: 2800000, guid: a0fdac62174ca014b94a537688fc684d, type: 3}
-  currentImageURL: 
   imageGeneratorPanel: {fileID: 8757204921206681390}
   dissolveController: {fileID: 3182179697547128556}
   imageGenerationUIManager: {fileID: 0}
@@ -1338,7 +1337,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
 --- !u!95 &3767570297762704166
 Animator:
-  serializedVersion: 4
+  serializedVersion: 5
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -1355,7 +1354,8 @@ Animator:
   m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorControllerStateOnDisable: 0
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &8757204921500188258
 GameObject:
   m_ObjectHideFlags: 0
@@ -1391,10 +1391,10 @@ RectTransform:
   m_Father: {fileID: 8757204921206681393}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -156}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 1024, y: 1024}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8757204921500188263
 CanvasRenderer:
@@ -1503,5 +1503,5 @@ MonoBehaviour:
   dissolveSpeed: 0.2
   isDissolving: 0
   outColor: {r: 0, g: 3.3448694, b: 7.999999, a: 1}
-  inColor: {r: 8, g: 0.2509804, b: 0, a: 1}
+  inColor: {r: 7.999999, g: 0.1585926, b: 0, a: 1}
   pictureFrame: {fileID: 0}

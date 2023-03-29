@@ -12,4 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f54dd7abf8990f741bfc2fd8800e3676, type: 3}
   m_Name: User_Data
   m_EditorClassIdentifier: 
-  spawnPoints: []
+  totalSolanaTokens: 0.00244394
+  totalDogelanaTokens: 1792068996000
+  dogelanaTokenAddress: 8UxoXccJjiSMjPuP77BCM5mVx1tqBWVyo8RcHa1jasnS
