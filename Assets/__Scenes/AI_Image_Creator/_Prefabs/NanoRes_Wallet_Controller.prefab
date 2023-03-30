@@ -5572,7 +5572,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4845346305561781427
 RectTransform:
   m_ObjectHideFlags: 0
@@ -10760,8 +10760,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 60
-  m_fontSizeBase: 60
+  m_fontSize: 55
+  m_fontSizeBase: 55
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -13322,7 +13322,7 @@ MonoBehaviour:
   m_HideSoftKeyboard: 0
   m_CharacterValidation: 0
   m_RegexValue: 
-  m_GlobalPointSize: 50
+  m_GlobalPointSize: 70
   m_CharacterLimit: 0
   m_OnEndEdit:
     m_PersistentCalls:
@@ -15922,6 +15922,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   applicationData: {fileID: 11400000, guid: 52ec0b9f10642944f8b7365eb1e26711, type: 2}
   userData: {fileID: 11400000, guid: ba3e9569d32350747b135283697cdae1, type: 2}
+  imageGenerationUIManager: {fileID: 0}
   ownedAmountTxt: {fileID: 6914160217325209376}
   nftTitleTxt: {fileID: 6914160218307250157}
   errorTxt: {fileID: 6914160217144469734}
@@ -18266,7 +18267,6 @@ MonoBehaviour:
   - {fileID: 6914160217725820681}
   - {fileID: 6914160218327454971}
   - {fileID: 6914160217771095223}
-  versionText: {fileID: 4845346305561781426}
 --- !u!222 &6914160218138454366
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -18979,8 +18979,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 30
-  m_fontSizeBase: 30
+  m_fontSize: 70
+  m_fontSizeBase: 70
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -19462,8 +19462,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 70
+  m_fontSizeBase: 70
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -20370,6 +20370,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   applicationData: {fileID: 11400000, guid: 52ec0b9f10642944f8b7365eb1e26711, type: 2}
   userData: {fileID: 11400000, guid: ba3e9569d32350747b135283697cdae1, type: 2}
+  imageGenerationUIManager: {fileID: 0}
   lamports: {fileID: 6914160217181964994}
   dogelanaTokenTotal: {fileID: 1643203727699316889}
   refreshBtn: {fileID: 4725628967064502297}

@@ -21,6 +21,8 @@ namespace Solana.Unity.SDK.Example
         private ApplicationData applicationData = null;
         [SerializeField]
         private UserData userData = null;
+        [SerializeField]
+        private ImageGenerationUIManager imageGenerationUIManager = null;
 
         [Header("UI Elements")]
         [SerializeField]
@@ -87,6 +89,7 @@ namespace Solana.Unity.SDK.Example
                 userData.ResetData();
                 Web3.Instance.Logout();
                 manager.ShowScreen(this, "login_screen");
+                userData.dogelanaTokenAddress = string.Empty;
             });
 
             qrCodeBtn.onClick.AddListener(SavePublicKeyOnClick);
@@ -95,31 +98,6 @@ namespace Solana.Unity.SDK.Example
             saveMnemonicsBtn.onClick.AddListener(SaveMnemonicsOnClick);
 
             _stopTask = new CancellationTokenSource();
-
-            Web3.WsRpc.SubscribeAccountInfo(
-                Web3.Instance.Wallet.Account.PublicKey,
-                (_, accountInfo) =>
-                {
-                    Debug.Log("Account changed!, updated lamport: " 
-                        + accountInfo.Value.Lamports);
-                    lamports.text = $"{ accountInfo.Value.Lamports * 0.000000001f }";
-                    userData.totalSolanaTokens = accountInfo.Value.Lamports * 0.000000001f;
-                },
-                Commitment.Confirmed
-            );
-
-            Web3.WsRpc.SubscribeTokenAccount(
-                "8UxoXccJjiSMjPuP77BCM5mVx1tqBWVyo8RcHa1jasnS",
-                (_, tokenInfo) =>
-                {
-                    Debug.Log("Account changed!, updated token account: "
-                        + tokenInfo.Value.Data.Parsed.Info.TokenAmount.ToString());
-                    userData.totalDogelanaTokens = tokenInfo.Value.Data.Parsed.Info.TokenAmount.AmountUlong;
-                    float finalDGLNFormat = userData.totalDogelanaTokens ;
-                    dogelanaTokenTotal.text = finalDGLNFormat.ToString();
-                },
-                Commitment.Confirmed
-            );
         }
 
         private void GenerateQr()
@@ -146,7 +124,6 @@ namespace Solana.Unity.SDK.Example
 
             UpdateWalletBalanceDisplay().AsUniTask().Forget();
             ShowDGLNBalance().AsUniTask().Forget();
-            //GetOwnedTokenAccounts().AsUniTask().Forget();
         }
 
         private void OnEnable()
@@ -199,8 +176,10 @@ namespace Solana.Unity.SDK.Example
 
             MainThreadDispatcher.Instance().Enqueue(() =>
             {
-                lamports.text = $"{sol}";
                 userData.totalSolanaTokens = sol;
+                userData.totalLamportUnits = (ulong)(sol * 1000000000);
+                lamports.text = sol.ToString("0.000000"); ;
+                imageGenerationUIManager.UpdateBalanceAndPricingText();
             });
         }
 
@@ -224,10 +203,47 @@ namespace Solana.Unity.SDK.Example
                 userData.totalDogelanaTokens = tokenAccount.Account.Data.Parsed.Info.
                     TokenAmount.AmountUlong;
                 float finalDGLNFormat = userData.totalDogelanaTokens * 0.000000001f;
-                dogelanaTokenTotal.text = finalDGLNFormat.ToString();
+                dogelanaTokenTotal.text = finalDGLNFormat.ToString("0");
+                
+                imageGenerationUIManager.UpdateBalanceAndPricingText();
 
+                if(string.IsNullOrEmpty(userData.dogelanaTokenAddress) == false)
+                {
+                    yield break;
+                }
+
+                Debug.Log(Web3.Account.PublicKey + 
+                    " Has A Dogelana Token Account: " + tokenAccount.PublicKey);
                 userData.dogelanaTokenAddress = tokenAccount.PublicKey;
-                Debug.Log("Dogelana Token Account Public Key: " + tokenAccount.PublicKey);
+
+                Web3.WsRpc.SubscribeAccountInfo(
+                    Web3.Instance.Wallet.Account.PublicKey,
+                    (_, accountInfo) =>
+                    {
+                        Debug.Log("Solana Account Changed! Updated Lamports: "
+                            + accountInfo.Value.Lamports);
+                        lamports.text = (accountInfo.Value.Lamports * 0.000000001f).ToString("0.000000");
+                        userData.totalLamportUnits = accountInfo.Value.Lamports;
+                        userData.totalSolanaTokens = accountInfo.Value.Lamports * 0.000000001f;
+                        imageGenerationUIManager.UpdateBalanceAndPricingText();
+
+                    },
+                    Commitment.Confirmed
+                );
+
+                Web3.WsRpc.SubscribeTokenAccount(
+                    userData.dogelanaTokenAddress,
+                    (_, tokenInfo) =>
+                    {
+                        Debug.Log("Dogelana Token Account Changed! Updated Dogelana Token Account: "
+                            + tokenInfo.Value.Data.Parsed.Info.TokenAmount.ToString());
+                        userData.totalDogelanaTokens = tokenInfo.Value.Data.Parsed.Info.TokenAmount.AmountUlong;
+                        float finalDGLNFormat = userData.totalDogelanaTokens;
+                        dogelanaTokenTotal.text = (finalDGLNFormat * 0.000000001f).ToString("0");
+                        imageGenerationUIManager.UpdateBalanceAndPricingText();
+                    },
+                    Commitment.Confirmed
+                );
 
                 yield break;
             }
@@ -240,7 +256,9 @@ namespace Solana.Unity.SDK.Example
 
             userData.totalDogelanaTokens = tokenBalance.AmountUlong;
             float finalDGLNFormat = userData.totalDogelanaTokens * 0.000000001f;
-            dogelanaTokenTotal.text = finalDGLNFormat.ToString();
+            dogelanaTokenTotal.text = finalDGLNFormat.ToString("0");
+
+            imageGenerationUIManager.UpdateBalanceAndPricingText();
         }
 
         private async Task ShowDGLNBalance()
@@ -249,6 +267,8 @@ namespace Solana.Unity.SDK.Example
                 new Wallet.PublicKey(applicationData.mintDGLNAddress));
 
             MainThreadDispatcher.Instance().Enqueue(ShowDGLNBalance(tokenBalance));
+
+            imageGenerationUIManager.UpdateBalanceAndPricingText();
         }
 
         private async Task GetOwnedTokenAccounts()
@@ -258,6 +278,8 @@ namespace Solana.Unity.SDK.Example
                 null);
 
             MainThreadDispatcher.Instance().Enqueue(ShowDGLNTokens(tokenBalance));
+
+            imageGenerationUIManager.UpdateBalanceAndPricingText();
         }
         
         public static async UniTask<TokenMintResolver> GetTokenMintResolver()
@@ -280,8 +302,8 @@ namespace Solana.Unity.SDK.Example
             dogelanaTokenTotal.text = string.Empty;
             publicKeyText.text = string.Empty;
 
-            lamports.text = $"{ userData.totalSolanaTokens }";
-            dogelanaTokenTotal.text = (userData.totalDogelanaTokens * 0.000000001f).ToString();
+            lamports.text = userData.totalSolanaTokens.ToString("0.000000");
+            dogelanaTokenTotal.text = (userData.totalDogelanaTokens * 0.000000001f).ToString("0");
 
             publicKeyText.text = Web3.Instance.Wallet.Account.PublicKey;
 
@@ -304,7 +326,6 @@ namespace Solana.Unity.SDK.Example
             GenerateQr();
 
             UpdateWalletBalanceDisplay().AsUniTask().Forget();
-            //ShowDGLNBalance().AsUniTask().Forget();
             GetOwnedTokenAccounts().AsUniTask().Forget();
 
             var hasPrivateKey = !string.IsNullOrEmpty(Web3.Instance.Wallet?.Account.PrivateKey);
@@ -312,6 +333,8 @@ namespace Solana.Unity.SDK.Example
 
             var hasMnemonics = !string.IsNullOrEmpty(Web3.Instance.Wallet?.Mnemonic?.ToString());
             saveMnemonicsBtn.gameObject.SetActive(hasMnemonics);
+
+            imageGenerationUIManager.UpdateBalanceAndPricingText();
         }
 
         public override void HideScreen()

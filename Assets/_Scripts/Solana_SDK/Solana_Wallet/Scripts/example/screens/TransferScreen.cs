@@ -13,6 +13,7 @@ namespace Solana.Unity.SDK.Example
     {
         [SerializeField] private ApplicationData applicationData = null;
         [SerializeField] private UserData userData = null;
+        [SerializeField] private ImageGenerationUIManager imageGenerationUIManager = null;
 
         public TextMeshProUGUI ownedAmountTxt;
         public TextMeshProUGUI nftTitleTxt;
@@ -55,19 +56,25 @@ namespace Solana.Unity.SDK.Example
 
         private async void TransferSol()
         {
+            float sendingAmount = float.Parse(amountTxt.text);
+
             RequestResult<string> result = await Web3.Instance.Wallet.Transfer(
                 new PublicKey(toPublicTxt.text),
-                Convert.ToUInt64(float.Parse(amountTxt.text)*SolLamports));
-            HandleResponse(result);
+                (ulong)(sendingAmount * SolLamports));
+
+            HandleResponse(result, ApplicationData.PaymentMethod.SOL, sendingAmount);
         }
 
         private async void TransferDogelana()
         {
+            float sendingAmount = float.Parse(amountTxt.text);
+
             RequestResult<string> result = await Web3.Instance.Wallet.Transfer(
                 new PublicKey(toPublicTxt.text),
                 new PublicKey(applicationData.mintDGLNAddress),
-                Convert.ToUInt64(float.Parse(amountTxt.text) * 10000000));
-            HandleResponse(result);
+                (ulong)(sendingAmount * SolLamports));
+
+            HandleResponse(result, ApplicationData.PaymentMethod.DGLN, sendingAmount);
         }
 
         bool CheckInput()
@@ -94,7 +101,7 @@ namespace Solana.Unity.SDK.Example
             }
             else if (applicationData.currentTransferMethodSelected == ApplicationData.PaymentMethod.DGLN)
             {
-                if (ulong.Parse(amountTxt.text) > userData.totalDogelanaTokens)
+                if (float.Parse(amountTxt.text) > userData.totalDogelanaTokens)
                 {
                     errorTxt.text = "Not enough Dogelana for this transaction.";
                     return false;
@@ -105,11 +112,25 @@ namespace Solana.Unity.SDK.Example
             return true;
         }
 
-        private void HandleResponse(RequestResult<string> result)
+        private void HandleResponse(RequestResult<string> result, 
+            ApplicationData.PaymentMethod paymentMethod, float amountSent)
         {
             errorTxt.text = result.Result == null ? result.Reason : "";
             if (result.Result != null)
             {
+                if(paymentMethod == ApplicationData.PaymentMethod.SOL)
+                {
+                    userData.totalLamportUnits -= (ulong)(amountSent * SolLamports);
+                    userData.totalSolanaTokens -= amountSent;
+                    nftTitleTxt.text = userData.totalSolanaTokens.ToString("0.000000");
+                }
+                else if (paymentMethod == ApplicationData.PaymentMethod.DGLN)
+                {
+                    userData.totalDogelanaTokens -= (ulong)(amountSent * SolLamports);
+                    nftTitleTxt.text = (userData.totalDogelanaTokens * 0.000000001f).ToString("0");
+                }
+
+                imageGenerationUIManager.UpdateBalanceAndPricingText();
                 manager.ShowScreen(this, "wallet_screen");
             }
         }
@@ -124,12 +145,12 @@ namespace Solana.Unity.SDK.Example
             if(applicationData.currentTransferMethodSelected == ApplicationData.PaymentMethod.SOL)
             {
                 nftImage.texture = applicationData.solanaTexture;
-                nftTitleTxt.text = userData.totalSolanaTokens + "";
+                nftTitleTxt.text = userData.totalSolanaTokens.ToString("0.000000");
             }
             else if(applicationData.currentTransferMethodSelected == ApplicationData.PaymentMethod.DGLN)
             {
                 nftImage.texture = applicationData.dogelanaTexture;
-                nftTitleTxt.text = (userData.totalDogelanaTokens * 0.000000001f) + "";
+                nftTitleTxt.text = (userData.totalDogelanaTokens * 0.000000001f).ToString("0");
             }
         }
 

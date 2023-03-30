@@ -1,10 +1,13 @@
 using Solana.Unity.Programs;
 using Solana.Unity.Rpc.Builders;
 using Solana.Unity.Rpc.Core.Http;
+using Solana.Unity.Rpc.Core.Sockets;
 using Solana.Unity.Rpc.Messages;
 using Solana.Unity.Rpc.Models;
+using Solana.Unity.Rpc.Types;
 using Solana.Unity.SDK;
 using Solana.Unity.Wallet;
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -36,6 +39,16 @@ public class ImageGenerationUIManager : MonoBehaviour
     private Button backUpURLButton = null;
     [SerializeField]
     private TMP_Text versionText = null;
+    [SerializeField]
+    private Text solPricingButtonText = null;
+    [SerializeField]
+    private Text solBalanceText = null;
+    [SerializeField]
+    private Text dglnPricingButtonText = null;
+    [SerializeField]
+    private Text dglnBalanceText = null;
+    [SerializeField]
+    private Text promptHeader = null;
 
     [Header("Animations")]
     [SerializeField] private Animator headerAnimator = null;
@@ -46,6 +59,7 @@ public class ImageGenerationUIManager : MonoBehaviour
     public static BeginSpaceshipAnimation beginSpaceshipAnimation = null;
 
     private const string notEnoughFunds = "Insuffient Funds\r\nRecharge Your Wallet & Try Again";
+    private const string promptHeaderStandard = "Enter Image Description";
 
     public void SetErrorText(string newText)
     {
@@ -63,6 +77,9 @@ public class ImageGenerationUIManager : MonoBehaviour
         footerAnimator.SetBool("InTransition", false);
         headerAnimator.SetBool("InTransition", false);
         spaceshipAnimator.SetBool("InTransition", false);
+
+        promptHeader.text = promptHeaderStandard;
+
     }
 
     public void ResetSpaceshipAnimation()
@@ -78,6 +95,8 @@ public class ImageGenerationUIManager : MonoBehaviour
         {
             errorText.gameObject.SetActive(false);
         }
+
+        UpdateBalanceAndPricingText();
     }
 
     public void PromptTextValueChanged()
@@ -148,7 +167,7 @@ public class ImageGenerationUIManager : MonoBehaviour
         errorText.gameObject.SetActive(false);
         SetBackUpURLButtonActive(false);
 
-        Run();
+        RunTransaction();
     }
 
     private void Awake()
@@ -160,6 +179,25 @@ public class ImageGenerationUIManager : MonoBehaviour
         SetBackUpURLButtonActive(false);
         characterCountText.text = 0 + " / " +
             applicationData.characterLimit.ToString();
+        solBalanceText.text = "";
+        dglnBalanceText.text = "";
+        promptHeader.text = promptHeaderStandard;
+    }
+
+    private void Start()
+    {
+        solPricingButtonText.text = applicationData.pricingInSOL + " SOL";
+        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0") + " DGLN";
+    }
+
+    public void UpdateBalanceAndPricingText()
+    {
+        solPricingButtonText.text = applicationData.pricingInSOL + " SOL";
+        solBalanceText.text = "Your SOL Balance\n" + userData.totalSolanaTokens.ToString("0.000000");
+
+        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0") + " DGLN";
+        dglnBalanceText.text = "Your DGLN Balance\n" 
+            + (userData.totalDogelanaTokens * 0.000000001d).ToString("0");
     }
 
     private void StartTheVisualShow()
@@ -204,6 +242,7 @@ public class ImageGenerationUIManager : MonoBehaviour
     {
         yield return new WaitForSeconds(0.02f);
 
+        UpdateBalanceAndPricingText();
         imageCreator.gameObject.SetActive(false);
         StartCoroutine(ImageRequest());
     }
@@ -214,6 +253,7 @@ public class ImageGenerationUIManager : MonoBehaviour
 
         imageCreator.SetPrompt(imagePrompt.text);
         imageCreator.gameObject.SetActive(true);
+        promptHeader.text = "";
     }
 
     private bool IsWalletConnected()
@@ -231,9 +271,9 @@ public class ImageGenerationUIManager : MonoBehaviour
         return Web3.Instance.Wallet.Account != null;
     }
 
-    private async void Run()
+    private void RunTransaction()
     {
-        if (Web3.Instance == null)
+        if (Web3.Account == null)
         {
             return;
         }
@@ -248,162 +288,150 @@ public class ImageGenerationUIManager : MonoBehaviour
             return;
         }
 
-        Account fromAccount = Web3.Instance.Wallet.Account;
-
-        RequestResult<ResponseValue<BlockHash>> blockHash = await Web3.Rpc.GetRecentBlockHashAsync();
-        Debug.Log($"BlockHash >> {blockHash.Result.Value.Blockhash}");
-
-        TransactionBuilder txBuilder = null;
-
         switch (applicationData.currentPaymentMethodSelected)
         {
             case ApplicationData.PaymentMethod.SOL:
 
-                print("Total Solana: " + (userData.totalSolanaTokens));
-                print("Solana Pricing: " + applicationData.pricingInLamports * 0.000000001);
-                if(userData.totalSolanaTokens < (applicationData.pricingInLamports * 0.000000001))
+                if (userData.totalLamportUnits < applicationData.pricingInLamports)
                 {
                     SetErrorText(notEnoughFunds);
                     walletButtonFlasher?.StartFlash();
-                    imageCreator?.GoBackToHome();
                     return;
                 }
 
-                txBuilder = RequestPurchaseWithSOL(blockHash.Result.Value.Blockhash, fromAccount);
-                
+                if ((userData.totalLamportUnits - applicationData.pricingInLamports) < 5000)
+                {
+                    SetErrorText("Not Enough SOL To Pay Gas Fees.");
+                    walletButtonFlasher?.StartFlash();
+                    return;
+                }
+
+                TransferSol();
+
                 break;
 
             case ApplicationData.PaymentMethod.DGLN:
 
-                print("Total Dogelana: " + userData.totalDogelanaTokens);
-                print("Dogelana Pricing: " + applicationData.pricingInDGLN);
                 if (userData.totalDogelanaTokens < applicationData.pricingInDGLN)
                 {
                     SetErrorText(notEnoughFunds);
                     walletButtonFlasher?.StartFlash();
-                    imageCreator?.GoBackToHome();
                     return;
                 }
 
-                txBuilder = RequestPurchaseWithDGLN(blockHash.Result.Value.Blockhash);
+                if (userData.totalLamportUnits < 5000)
+                {
+                    SetErrorText("Not Enough SOL To Pay Gas Fees.");
+                    walletButtonFlasher?.StartFlash();
+                    return;
+                }
+
+                TransferDogelana();
 
                 break;
-        }
-
-        if (txBuilder == null)
-        {
-            Debug.LogWarning("No SPL Token Account was found that matches the targetMintAddress: " 
-                + applicationData.mintDGLNAddress);
-            return;
-        }
-
-        byte[] msgBytes = txBuilder.CompileMessage();
-        byte[] signature = fromAccount.Sign(msgBytes);
-        byte[] tx = txBuilder.AddSignature(signature).Serialize();
-
-        RequestResult<ResponseValue<SimulationLogs>> txSim = 
-            await Web3.Rpc.SimulateTransactionAsync(tx, true);
-
-        if (txSim.WasSuccessful == false)
-        {
-            Debug.LogWarning(txSim.ServerErrorCode + ": " + txSim.ErrorData);
-            Debug.LogWarning(txSim.WasSuccessful + ": " + txSim.WasHttpRequestSuccessful + ": " 
-                + txSim.WasRequestSuccessfullyHandled);
-            Debug.LogWarning("Reason: " + txSim.Reason);
-            Debug.LogWarning("RawRpcRequest: " + txSim.RawRpcRequest);
-            Debug.LogWarning("RawRpcResponse: " + txSim.RawRpcResponse);
-            Debug.LogWarning("HttpStatusCode: " + txSim.HttpStatusCode);
-
-            SetErrorText(notEnoughFunds);
-            imageCreator?.GoBackToHome();
-            walletButtonFlasher?.StartFlash();
-            return;
-        }
-
-        StartTheVisualShow();
-
-        RequestResult<string> firstSig = await Web3.Rpc.SendAndConfirmTransactionAsync(tx);
-
-        if (firstSig.WasSuccessful == false)
-        {
-            Debug.LogWarning(firstSig.ServerErrorCode + ": " + firstSig.ErrorData);
-            Debug.LogWarning(firstSig.WasSuccessful + ": "
-                + firstSig.WasHttpRequestSuccessful + ": "
-                + firstSig.WasRequestSuccessfullyHandled);
-            Debug.LogWarning("Reason: " + firstSig.Reason);
-            Debug.LogWarning("RawRpcRequest: " + firstSig.RawRpcRequest);
-            Debug.LogWarning("RawRpcResponse: " + firstSig.RawRpcResponse);
-            Debug.LogWarning("HttpStatusCode: " + firstSig.HttpStatusCode);
-
-            SetErrorText(notEnoughFunds);
-            imageCreator?.GoBackToHome();
-            walletButtonFlasher?.StartFlash();
-            return;
-        }
-
-        Debug.Log($"Tx Signature: {firstSig.Result}");
-
-        switch (applicationData.currentPaymentMethodSelected)
-        {
-            case ApplicationData.PaymentMethod.SOL:
-
-                userData.totalSolanaTokens -= (applicationData.pricingInLamports * 0.000000001);
-
-                break;
-
-            case ApplicationData.PaymentMethod.DGLN:
-
-                userData.totalDogelanaTokens -= applicationData.pricingInDGLN;
-
-                break;
-        }
-
-        SubmitPromptForImage();
+        }        
     }
 
-    private TransactionBuilder RequestPurchaseWithSOL(string blockhash, Account fromAccount)
+    private async void TransferSol()
     {
-        string toWalletAddress = applicationData.payToSolanaAddress;
-        ulong playmentInSOL = applicationData.pricingInLamports;
+        RequestResult<ResponseValue<BlockHash>> blockHash = await Web3.Rpc.GetRecentBlockHashAsync();
+        Debug.Log($"BlockHash >> {blockHash.Result.Value.Blockhash}");
 
-        //if (RemoteConfig.info != null)
-        //{
-        //    playmentInSOL = RemoteConfig.info.PricingInLamports;
-        //    toWalletAddress = RemoteConfig.info.PayToSOLWallet;
-        //}
+        byte[] tx = new TransactionBuilder()
+            .SetRecentBlockHash(blockHash.Result.Value.Blockhash)
+        .SetFeePayer(Web3.Account)
+            .AddInstruction(SystemProgram.Transfer(Web3.Account.PublicKey,
+            new PublicKey(applicationData.payToSolanaAddress), applicationData.pricingInLamports))
+            .AddInstruction(MemoProgram.NewMemo(Web3.Account.PublicKey, 
+            applicationData.transactionMemoStatement + Application.version + " | SOL"))
+            .Build(Web3.Account);
 
-        TransactionBuilder txBuilder = new TransactionBuilder()
-            .SetRecentBlockHash(blockhash)
-            .SetFeePayer(fromAccount.PublicKey)
-            .AddInstruction(SystemProgram.Transfer(fromAccount.PublicKey,
-                new PublicKey(toWalletAddress), playmentInSOL))
-            .AddInstruction(MemoProgram.NewMemo(fromAccount.PublicKey,
-                applicationData.transactionMemoStatement + Application.version + " SOL"));
+        Debug.Log($"Tx base64: {Convert.ToBase64String(tx)}");
+        RequestResult<ResponseValue<SimulationLogs>> txSim = await Web3.Rpc.SimulateTransactionAsync(tx);
 
+        if (txSim.WasSuccessful)
+        {
+            RequestResult<string> firstSig = await Web3.Rpc.SendTransactionAsync(tx);
+            Debug.Log($"First Tx Signature: {firstSig.Result}");
 
-        return txBuilder;
+            Web3.WsRpc.SubscribeSignature(firstSig.Result, HandlePaySOLResponse, Commitment.Finalized);
+            StartTheVisualShow();
+            promptHeader.text = "Waiting For Transaction Confirmation..";
+        }
+        else
+        {
+            errorText.text = txSim.Reason;
+        }
     }
 
-    private TransactionBuilder RequestPurchaseWithDGLN(string blockhash)
+    private void HandlePaySOLResponse(SubscriptionState subState, ResponseValue<ErrorResult> responseValue)
     {
-        string toWalletAddress = applicationData.payToDogelanaAddress;
-        ulong playmentInDGLN = applicationData.pricingInDGLN;
+        if(subState.LastError == null)
+        {
+            userData.totalLamportUnits -= applicationData.pricingInLamports;
+            userData.totalSolanaTokens -= applicationData.pricingInSOL;
 
-        //if (RemoteConfig.info != null)
-        //{
-        //    playmentInDGLN = RemoteConfig.info.PricingInDGLN;
-        //    toWalletAddress = RemoteConfig.info.PayToDGLNWallet;
-        //}
+            UpdateBalanceAndPricingText();
+            Web3.WsRpc.Unsubscribe(subState);
+            promptHeader.text = "Retrieving Your New AI Created Image..";
+            SubmitPromptForImage();
+        }
+        else
+        {
+            errorText.text = subState.LastError;
+        }
+    }
 
-        TransactionBuilder txBuilder = new TransactionBuilder()
-            .SetRecentBlockHash(blockhash)
-            .SetFeePayer(Web3.Instance.Wallet.Account.PublicKey)
-            .AddInstruction(TokenProgram.Transfer(new PublicKey(userData.dogelanaTokenAddress),
-                new PublicKey(toWalletAddress), playmentInDGLN, 
-                Web3.Instance.Wallet.Account.PublicKey))
-            .AddInstruction(MemoProgram.NewMemo(Web3.Instance.Wallet.Account.PublicKey, 
-                applicationData.transactionMemoStatement + Application.version + " DGLN"));
+    private async void TransferDogelana()
+    {
+        RequestResult<ResponseValue<BlockHash>> blockHash = await Web3.Rpc.GetRecentBlockHashAsync();
+        Debug.Log($"BlockHash >> {blockHash.Result.Value.Blockhash}");
 
-        return txBuilder;
+        byte[] tx = new TransactionBuilder()
+            .SetRecentBlockHash(blockHash.Result.Value.Blockhash)
+        .SetFeePayer(Web3.Account)
+            .AddInstruction(TokenProgram.Transfer(
+                new PublicKey(userData.dogelanaTokenAddress),
+                new PublicKey(applicationData.payToDogelanaAddress), 
+                applicationData.pricingInDGLN,
+                Web3.Account.PublicKey))
+            .AddInstruction(MemoProgram.NewMemo(Web3.Account.PublicKey,
+            applicationData.transactionMemoStatement + Application.version + " | DGLN"))
+            .Build(Web3.Account);
+
+        Debug.Log($"Tx base64: {Convert.ToBase64String(tx)}");
+        RequestResult<ResponseValue<SimulationLogs>> txSim = await Web3.Rpc.SimulateTransactionAsync(tx);
+
+        if (txSim.WasSuccessful)
+        {
+            RequestResult<string> firstSig = await Web3.Rpc.SendTransactionAsync(tx);
+            Debug.Log($"First Tx Signature: {firstSig.Result}");
+
+            Web3.WsRpc.SubscribeSignature(firstSig.Result, HandlePayDGLNResponse, Commitment.Finalized);
+            StartTheVisualShow();
+            promptHeader.text = "Waiting For Transaction Confirmation..";
+        }
+        else
+        {
+            errorText.text = txSim.Reason;
+        }
+    }
+
+    private void HandlePayDGLNResponse(SubscriptionState subState, ResponseValue<ErrorResult> responseValue)
+    {
+        if (subState.LastError == null)
+        {
+            userData.totalDogelanaTokens -= applicationData.pricingInDGLN;
+
+            UpdateBalanceAndPricingText();
+            Web3.WsRpc.Unsubscribe(subState);
+            promptHeader.text = "Retrieving Your New AI Created Image..";
+            SubmitPromptForImage();
+        }
+        else
+        {
+            Debug.Log(subState.LastError);
+            errorText.text = subState.LastError;
+        }
     }
 }

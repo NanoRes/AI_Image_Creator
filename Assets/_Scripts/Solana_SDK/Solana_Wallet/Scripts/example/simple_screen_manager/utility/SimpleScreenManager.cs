@@ -9,15 +9,10 @@ namespace Solana.Unity.SDK.Example
     {
         public SimpleScreen[] screens = null;
 
-        [SerializeField]
-        private TMP_Text versionText = null;
-
         private Dictionary<string, SimpleScreen> screensDict = new();
 
         private void Awake()
         {
-            versionText.text = Application.version;
-
             PopulateDictionary();
         }
 

@@ -27,6 +27,7 @@ public class ApplicationData : ScriptableObject
     public bool isFreeForTesting = false;
 
     public int characterLimit = 1000;
+    public double pricingInSOL = 0.025;
     public ulong pricingInLamports = 25000000;
     public ulong pricingInDGLN = 25000000000000;
 

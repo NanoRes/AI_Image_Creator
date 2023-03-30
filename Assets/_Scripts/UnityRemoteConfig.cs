@@ -60,8 +60,10 @@ public class UnityRemoteConfig : MonoBehaviour
             JsonUtility.FromJsonOverwrite(RemoteConfigService.Instance.appConfig.config.ToString(), info);
             applicationData.pricingInDGLN = (ulong)info.PricingInDGLN;
             applicationData.pricingInLamports = (ulong)info.PricingInLamports;
+            applicationData.pricingInSOL = applicationData.pricingInLamports * 0.000000001d;
             applicationData.payToDogelanaAddress = info.PayToDGLNWallet;
             applicationData.payToSolanaAddress = info.PayToSOLWallet;
+            
         }
         catch (Exception exception)
         {
