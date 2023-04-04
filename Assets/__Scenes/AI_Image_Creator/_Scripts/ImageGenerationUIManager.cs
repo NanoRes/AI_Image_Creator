@@ -9,6 +9,7 @@ using Solana.Unity.SDK;
 using Solana.Unity.Wallet;
 using System;
 using System.Collections;
+using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,6 +22,15 @@ public class ImageGenerationUIManager : MonoBehaviour
     private UserData userData = null;
     [SerializeField]
     private AIImageCreator imageCreator = null;
+
+#if USINGCONFIG
+
+    [SerializeField]
+    private UnityAnalyticsManager unityAnalyticsManager = null;
+    [SerializeField]
+    private UnityRemoteConfig unityRemoteConfig = null;
+
+#endif
 
     [Header("UI Elements")]
     [SerializeField]
@@ -184,10 +194,34 @@ public class ImageGenerationUIManager : MonoBehaviour
         promptHeader.text = promptHeaderStandard;
     }
 
-    private void Start()
+#if USINGCONFIG
+
+    private async Task StartAsync()
     {
+        await unityAnalyticsManager.StartItUp();
+
+        await unityRemoteConfig.StartItUp();
+
         solPricingButtonText.text = applicationData.pricingInSOL + " SOL";
         dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0") + " DGLN";
+    }
+
+#endif
+
+    private void Start()
+    {
+
+#if USINGCONFIG
+
+        _ = StartAsync();
+
+#else
+
+        solPricingButtonText.text = applicationData.pricingInSOL + " SOL";
+        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0") + " DGLN";
+
+#endif
+
     }
 
     public void UpdateBalanceAndPricingText()
@@ -253,7 +287,7 @@ public class ImageGenerationUIManager : MonoBehaviour
 
         imageCreator.SetPrompt(imagePrompt.text);
         imageCreator.gameObject.SetActive(true);
-        promptHeader.text = "";
+        promptHeader.text = "Retrieving Your New AI Created Image..";
     }
 
     private bool IsWalletConnected()
@@ -339,11 +373,12 @@ public class ImageGenerationUIManager : MonoBehaviour
 
         byte[] tx = new TransactionBuilder()
             .SetRecentBlockHash(blockHash.Result.Value.Blockhash)
-        .SetFeePayer(Web3.Account)
+            .SetFeePayer(Web3.Account)
             .AddInstruction(SystemProgram.Transfer(Web3.Account.PublicKey,
             new PublicKey(applicationData.payToSolanaAddress), applicationData.pricingInLamports))
             .AddInstruction(MemoProgram.NewMemo(Web3.Account.PublicKey, 
             applicationData.transactionMemoStatement + Application.version + " | SOL"))
+            .AddSignature(Web3.Account.ToString())
             .Build(Web3.Account);
 
         Debug.Log($"Tx base64: {Convert.ToBase64String(tx)}");
@@ -392,11 +427,12 @@ public class ImageGenerationUIManager : MonoBehaviour
         .SetFeePayer(Web3.Account)
             .AddInstruction(TokenProgram.Transfer(
                 new PublicKey(userData.dogelanaTokenAddress),
-                new PublicKey(applicationData.payToDogelanaAddress), 
+                new PublicKey(applicationData.payToDogelanaAddress),
                 applicationData.pricingInDGLN,
                 Web3.Account.PublicKey))
             .AddInstruction(MemoProgram.NewMemo(Web3.Account.PublicKey,
             applicationData.transactionMemoStatement + Application.version + " | DGLN"))
+            .AddSignature(Web3.Account.ToString())
             .Build(Web3.Account);
 
         Debug.Log($"Tx base64: {Convert.ToBase64String(tx)}");

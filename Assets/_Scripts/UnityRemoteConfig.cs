@@ -1,12 +1,22 @@
+#if USINGCONFIG
+
 using System.Threading.Tasks;
 using Unity.Services.RemoteConfig;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
-using UnityEngine;
 using System;
+
+#endif
+
+using UnityEngine;
 
 public class UnityRemoteConfig : MonoBehaviour
 {
+    [SerializeField]
+    private ApplicationData applicationData = null;
+
+#if USINGCONFIG
+
     [System.Serializable]
     public class UnityRemoteConfigInfo
     {
@@ -16,16 +26,13 @@ public class UnityRemoteConfig : MonoBehaviour
         public long PricingInDGLN = 0;
     }
 
-    [SerializeField]
-    private ApplicationData applicationData = null;
-
     public static UnityRemoteConfigInfo info = new UnityRemoteConfigInfo();
 
     public struct userAttributes { }
 
     public struct appAttributes { }
 
-    async Task InitializeRemoteConfigAsync()
+    private async Task InitializeRemoteConfigAsync()
     {
         await UnityServices.InitializeAsync();
 
@@ -35,14 +42,7 @@ public class UnityRemoteConfig : MonoBehaviour
         }
     }
 
-    private void Start()
-    {
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-        StartItUp();
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-    }
-
-    async Task StartItUp()
+    public async Task StartItUp()
     {
         if (Utilities.CheckForInternetConnection())
         {
@@ -53,7 +53,7 @@ public class UnityRemoteConfig : MonoBehaviour
         RemoteConfigService.Instance.FetchConfigs(new userAttributes(), new appAttributes());
     }
 
-    void ApplyRemoteSettings(ConfigResponse configResponse)
+    private void ApplyRemoteSettings(ConfigResponse configResponse)
     {
         try
         {
@@ -70,4 +70,7 @@ public class UnityRemoteConfig : MonoBehaviour
             Debug.LogWarning(exception.Message);
         }
     }
+
+#endif
+
 }

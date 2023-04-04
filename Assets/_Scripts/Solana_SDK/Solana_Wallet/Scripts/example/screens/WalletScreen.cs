@@ -180,6 +180,8 @@ namespace Solana.Unity.SDK.Example
                 userData.totalLamportUnits = (ulong)(sol * 1000000000);
                 lamports.text = sol.ToString("0.000000"); ;
                 imageGenerationUIManager.UpdateBalanceAndPricingText();
+
+                GetOwnedTokenAccounts().AsUniTask().Forget();
             });
         }
 
@@ -326,8 +328,7 @@ namespace Solana.Unity.SDK.Example
             GenerateQr();
 
             UpdateWalletBalanceDisplay().AsUniTask().Forget();
-            GetOwnedTokenAccounts().AsUniTask().Forget();
-
+            
             var hasPrivateKey = !string.IsNullOrEmpty(Web3.Instance.Wallet?.Account.PrivateKey);
             savePrivateKeyBtn.gameObject.SetActive(hasPrivateKey);
 

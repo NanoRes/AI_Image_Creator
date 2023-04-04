@@ -838,6 +838,8 @@ GameObject:
   m_Component:
   - component: {fileID: 122827940761065717}
   - component: {fileID: 122827940761065716}
+  - component: {fileID: 1805815909925675760}
+  - component: {fileID: 7510279355365720196}
   - component: {fileID: 122827940761065718}
   - component: {fileID: 122827940761065719}
   - component: {fileID: 122827940761065712}
@@ -900,9 +902,35 @@ MonoBehaviour:
   solBalanceText: {fileID: 3166988258873135794}
   dglnPricingButtonText: {fileID: 4283991526600597484}
   dglnBalanceText: {fileID: 2290759278706115336}
+  promptHeader: {fileID: 6848091288672205839}
   headerAnimator: {fileID: 8219218118352549217}
   footerAnimator: {fileID: 3774805061016976542}
   spaceshipAnimator: {fileID: 1686079035067413916}
+--- !u!114 &1805815909925675760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 122827940761065713}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 171fb49bd5d9c0543a1d1fb74d7d6256, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  applicationData: {fileID: 11400000, guid: 52ec0b9f10642944f8b7365eb1e26711, type: 2}
+--- !u!114 &7510279355365720196
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 122827940761065713}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbc0c9b520d8b854aa51200fed1fdf82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!223 &122827940761065718
 Canvas:
   m_ObjectHideFlags: 0

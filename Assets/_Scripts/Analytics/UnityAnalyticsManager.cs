@@ -1,16 +1,21 @@
 using UnityEngine;
+
+#if USINGCONFIG
+
 using Unity.Services.Core;
 using Unity.Services.Analytics;
+
+#endif
+
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 public class UnityAnalyticsManager : MonoBehaviour
 {
-    private void Start()
-    {
-        StartItUp();
-    }
 
-    async void StartItUp()
+#if USINGCONFIG
+
+    public async Task StartItUp()
     {
         try
         {
@@ -22,4 +27,7 @@ public class UnityAnalyticsManager : MonoBehaviour
             Debug.LogWarning(e.ErrorCode + ": " + e.Message);
         }
     }
+
+#endif
+
 }

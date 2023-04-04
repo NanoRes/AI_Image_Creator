@@ -25,6 +25,7 @@ namespace Solana.Unity.SDK.Example
 
         private void OnEnable()
         {
+            mnemonicTxt.text = string.Empty;
             wrongPasswordTxt.gameObject.SetActive(false);
             errorTxt.text = string.Empty;
             errorTxt.gameObject.SetActive(false);
