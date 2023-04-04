@@ -386,7 +386,9 @@ public class ImageGenerationUIManager : MonoBehaviour
 
         if (txSim.WasSuccessful)
         {
-            RequestResult<string> firstSig = await Web3.Rpc.SendTransactionAsync(tx);
+            Transaction transaction = Transaction.Deserialize(Convert.ToBase64String(tx));
+
+            RequestResult<string> firstSig = await Web3.Base.SignAndSendTransaction(transaction);
             Debug.Log($"First Tx Signature: {firstSig.Result}");
 
             Web3.WsRpc.SubscribeSignature(firstSig.Result, HandlePaySOLResponse, Commitment.Finalized);
@@ -440,7 +442,9 @@ public class ImageGenerationUIManager : MonoBehaviour
 
         if (txSim.WasSuccessful)
         {
-            RequestResult<string> firstSig = await Web3.Rpc.SendTransactionAsync(tx);
+            Transaction transaction = Transaction.Deserialize(Convert.ToBase64String(tx));
+
+            RequestResult<string> firstSig = await Web3.Base.SignAndSendTransaction(transaction);
             Debug.Log($"First Tx Signature: {firstSig.Result}");
 
             Web3.WsRpc.SubscribeSignature(firstSig.Result, HandlePayDGLNResponse, Commitment.Finalized);
