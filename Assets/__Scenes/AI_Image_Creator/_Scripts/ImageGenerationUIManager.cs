@@ -496,7 +496,7 @@ public class ImageGenerationUIManager : MonoBehaviour
     }
 
     private float currentWaitingTransactionTimerSeconds = -1.0f;
-    private float waitingTransactionTimerSeconds = 10.0f;
+    private float waitingTransactionTimerSeconds = 15.0f;
 
     private void StartTransactionTimer()
     {
