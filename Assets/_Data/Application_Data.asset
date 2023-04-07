@@ -17,9 +17,9 @@ MonoBehaviour:
   isWalletOpen: 0
   isFreeForTesting: 0
   characterLimit: 1000
-  pricingInSOL: 0.025
-  pricingInLamports: 25000000
-  pricingInDGLN: 25000000000000
+  pricingInSOL: 0.01
+  pricingInLamports: 10000000
+  pricingInDGLN: 15000000000000
   imageSizeOptions:
   - 256x256
   - 512x512
