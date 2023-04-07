@@ -428,9 +428,6 @@ public class ImageGenerationUIManager : MonoBehaviour
 
         if (subState.LastError == null)
         {
-            userData.totalLamportUnits -= applicationData.pricingInLamports;
-            userData.totalSolanaTokens -= applicationData.pricingInSOL;
-
             UpdateBalanceAndPricingText();
             Web3.WsRpc.Unsubscribe(subState);
             promptHeader.text = "Retrieving Your New AI Created Image..";
@@ -489,8 +486,6 @@ public class ImageGenerationUIManager : MonoBehaviour
         
         if (subState.LastError == null)
         {
-            userData.totalDogelanaTokens -= applicationData.pricingInDGLN;
-
             UpdateBalanceAndPricingText();
             Web3.WsRpc.Unsubscribe(subState);
             promptHeader.text = "Retrieving Your New AI Created Image..";
