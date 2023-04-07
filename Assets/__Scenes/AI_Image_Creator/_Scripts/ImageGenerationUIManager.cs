@@ -231,8 +231,17 @@ public class ImageGenerationUIManager : MonoBehaviour
         solBalanceText.text = "Your SOL Balance\n" + userData.totalSolanaTokens.ToString("0.0000");
 
         dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0,000") + " DGLN";
-        dglnBalanceText.text = "Your DGLN Balance\n" 
-            + (userData.totalDogelanaTokens * 0.000000001d).ToString("0,000");
+
+        float finalDGLNFormat = userData.totalDogelanaTokens * 0.000000001f;
+
+        if (finalDGLNFormat < 1000)
+        {
+            dglnBalanceText.text = "Your DGLN Balance\n" + finalDGLNFormat.ToString("0");
+        }
+        else
+        {
+            dglnBalanceText.text = "Your DGLN Balance\n" + finalDGLNFormat.ToString("0,000");
+        }
     }
 
     private void StartTheVisualShow()
