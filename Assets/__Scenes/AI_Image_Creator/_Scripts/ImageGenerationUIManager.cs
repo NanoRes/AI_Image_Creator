@@ -204,7 +204,7 @@ public class ImageGenerationUIManager : MonoBehaviour
         await unityRemoteConfig.StartItUp();
 
         solPricingButtonText.text = applicationData.pricingInSOL + " SOL";
-        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0") + " DGLN";
+        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0,000") + " DGLN";
     }
 
 #endif
@@ -219,7 +219,7 @@ public class ImageGenerationUIManager : MonoBehaviour
 #else
 
         solPricingButtonText.text = applicationData.pricingInSOL + " SOL";
-        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0") + " DGLN";
+        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0,000") + " DGLN";
 
 #endif
 
@@ -230,9 +230,9 @@ public class ImageGenerationUIManager : MonoBehaviour
         solPricingButtonText.text = applicationData.pricingInSOL + " SOL";
         solBalanceText.text = "Your SOL Balance\n" + userData.totalSolanaTokens.ToString("0.0000");
 
-        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0") + " DGLN";
+        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0,000") + " DGLN";
         dglnBalanceText.text = "Your DGLN Balance\n" 
-            + (userData.totalDogelanaTokens * 0.000000001d).ToString("0");
+            + (userData.totalDogelanaTokens * 0.000000001d).ToString("0,000");
     }
 
     private void StartTheVisualShow()

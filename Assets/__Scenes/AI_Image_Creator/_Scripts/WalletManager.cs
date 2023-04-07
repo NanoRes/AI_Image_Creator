@@ -16,7 +16,7 @@ public class WalletManager : MonoBehaviour
         applicationData.isWalletOpen = false;
     }
 
-    void Update()
+    private void Update()
     {
         if (applicationData.isWalletOpen == wallet.activeSelf)
         {

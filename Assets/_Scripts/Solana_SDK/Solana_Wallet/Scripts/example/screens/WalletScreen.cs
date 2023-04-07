@@ -178,7 +178,7 @@ namespace Solana.Unity.SDK.Example
             {
                 userData.totalSolanaTokens = sol;
                 userData.totalLamportUnits = (ulong)(sol * 1000000000);
-                lamports.text = sol.ToString("0.000000"); ;
+                lamports.text = sol.ToString("0.0000"); ;
                 imageGenerationUIManager.UpdateBalanceAndPricingText();
 
                 GetOwnedTokenAccounts().AsUniTask().Forget();
@@ -205,7 +205,7 @@ namespace Solana.Unity.SDK.Example
                 userData.totalDogelanaTokens = tokenAccount.Account.Data.Parsed.Info.
                     TokenAmount.AmountUlong;
                 float finalDGLNFormat = userData.totalDogelanaTokens * 0.000000001f;
-                dogelanaTokenTotal.text = finalDGLNFormat.ToString("0");
+                dogelanaTokenTotal.text = finalDGLNFormat.ToString("0,000");
                 
                 imageGenerationUIManager.UpdateBalanceAndPricingText();
 
@@ -224,7 +224,7 @@ namespace Solana.Unity.SDK.Example
                     {
                         Debug.Log("Solana Account Changed! Updated Lamports: "
                             + accountInfo.Value.Lamports);
-                        lamports.text = (accountInfo.Value.Lamports * 0.000000001f).ToString("0.000000");
+                        lamports.text = (accountInfo.Value.Lamports * 0.000000001f).ToString("0.0000");
                         userData.totalLamportUnits = accountInfo.Value.Lamports;
                         userData.totalSolanaTokens = accountInfo.Value.Lamports * 0.000000001f;
                         imageGenerationUIManager.UpdateBalanceAndPricingText();
@@ -241,7 +241,7 @@ namespace Solana.Unity.SDK.Example
                             + tokenInfo.Value.Data.Parsed.Info.TokenAmount.ToString());
                         userData.totalDogelanaTokens = tokenInfo.Value.Data.Parsed.Info.TokenAmount.AmountUlong;
                         float finalDGLNFormat = userData.totalDogelanaTokens;
-                        dogelanaTokenTotal.text = (finalDGLNFormat * 0.000000001f).ToString("0");
+                        dogelanaTokenTotal.text = (finalDGLNFormat * 0.000000001f).ToString("0,000");
                         imageGenerationUIManager.UpdateBalanceAndPricingText();
                     },
                     Commitment.Confirmed
@@ -258,7 +258,7 @@ namespace Solana.Unity.SDK.Example
 
             userData.totalDogelanaTokens = tokenBalance.AmountUlong;
             float finalDGLNFormat = userData.totalDogelanaTokens * 0.000000001f;
-            dogelanaTokenTotal.text = finalDGLNFormat.ToString("0");
+            dogelanaTokenTotal.text = finalDGLNFormat.ToString("0,000");
 
             imageGenerationUIManager.UpdateBalanceAndPricingText();
         }
@@ -304,8 +304,8 @@ namespace Solana.Unity.SDK.Example
             dogelanaTokenTotal.text = string.Empty;
             publicKeyText.text = string.Empty;
 
-            lamports.text = userData.totalSolanaTokens.ToString("0.000000");
-            dogelanaTokenTotal.text = (userData.totalDogelanaTokens * 0.000000001f).ToString("0");
+            lamports.text = userData.totalSolanaTokens.ToString("0.0000");
+            dogelanaTokenTotal.text = (userData.totalDogelanaTokens * 0.000000001f).ToString("0,000");
 
             publicKeyText.text = Web3.Instance.Wallet.Account.PublicKey;
 
