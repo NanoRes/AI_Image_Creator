@@ -143,6 +143,7 @@ public class AIImageCreator : MonoBehaviour
         }
         else
         {
+            imageGenerationUIManager.SetPromptHeaderTextForImageReceived();
             Debug.Log("Get Texture Result: " + www.result);
             RevealImage(www);
         }

@@ -9,6 +9,7 @@ using Solana.Unity.SDK;
 using Solana.Unity.Wallet;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
@@ -203,7 +204,7 @@ public class ImageGenerationUIManager : MonoBehaviour
         await unityRemoteConfig.StartItUp();
 
         solPricingButtonText.text = applicationData.pricingInSOL + " SOL";
-        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0") + " DGLN";
+        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0,000") + " DGLN";
     }
 
 #endif
@@ -218,7 +219,7 @@ public class ImageGenerationUIManager : MonoBehaviour
 #else
 
         solPricingButtonText.text = applicationData.pricingInSOL + " SOL";
-        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0") + " DGLN";
+        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0,000") + " DGLN";
 
 #endif
 
@@ -227,11 +228,20 @@ public class ImageGenerationUIManager : MonoBehaviour
     public void UpdateBalanceAndPricingText()
     {
         solPricingButtonText.text = applicationData.pricingInSOL + " SOL";
-        solBalanceText.text = "Your SOL Balance\n" + userData.totalSolanaTokens.ToString("0.000000");
+        solBalanceText.text = "Your SOL Balance\n" + userData.totalSolanaTokens.ToString("0.0000");
 
-        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0") + " DGLN";
-        dglnBalanceText.text = "Your DGLN Balance\n" 
-            + (userData.totalDogelanaTokens * 0.000000001d).ToString("0");
+        dglnPricingButtonText.text = (applicationData.pricingInDGLN * 0.000000001d).ToString("0,000") + " DGLN";
+
+        float finalDGLNFormat = userData.totalDogelanaTokens * 0.000000001f;
+
+        if (finalDGLNFormat < 1000)
+        {
+            dglnBalanceText.text = "Your DGLN Balance\n" + finalDGLNFormat.ToString("0");
+        }
+        else
+        {
+            dglnBalanceText.text = "Your DGLN Balance\n" + finalDGLNFormat.ToString("0,000");
+        }
     }
 
     private void StartTheVisualShow()
@@ -290,6 +300,11 @@ public class ImageGenerationUIManager : MonoBehaviour
         promptHeader.text = "Retrieving Your New AI Created Image..";
     }
 
+    public void SetPromptHeaderTextForImageReceived()
+    {
+        promptHeader.text = "Congratulations! Here's Your New AI Created Image!";
+    }
+
     private bool IsWalletConnected()
     {
         if (Web3.Instance == null)
@@ -330,6 +345,7 @@ public class ImageGenerationUIManager : MonoBehaviour
                 {
                     SetErrorText(notEnoughFunds);
                     walletButtonFlasher?.StartFlash();
+                    imageCreator.SubmitNewRequest();
                     return;
                 }
 
@@ -337,6 +353,7 @@ public class ImageGenerationUIManager : MonoBehaviour
                 {
                     SetErrorText("Not Enough SOL To Pay Gas Fees.");
                     walletButtonFlasher?.StartFlash();
+                    imageCreator.SubmitNewRequest();
                     return;
                 }
 
@@ -350,6 +367,7 @@ public class ImageGenerationUIManager : MonoBehaviour
                 {
                     SetErrorText(notEnoughFunds);
                     walletButtonFlasher?.StartFlash();
+                    imageCreator.SubmitNewRequest();
                     return;
                 }
 
@@ -357,6 +375,7 @@ public class ImageGenerationUIManager : MonoBehaviour
                 {
                     SetErrorText("Not Enough SOL To Pay Gas Fees.");
                     walletButtonFlasher?.StartFlash();
+                    imageCreator.SubmitNewRequest();
                     return;
                 }
 
@@ -378,7 +397,6 @@ public class ImageGenerationUIManager : MonoBehaviour
             new PublicKey(applicationData.payToSolanaAddress), applicationData.pricingInLamports))
             .AddInstruction(MemoProgram.NewMemo(Web3.Account.PublicKey, 
             applicationData.transactionMemoStatement + Application.version + " | SOL"))
-            .AddSignature(Web3.Account.ToString())
             .Build(Web3.Account);
 
         Debug.Log($"Tx base64: {Convert.ToBase64String(tx)}");
@@ -386,28 +404,30 @@ public class ImageGenerationUIManager : MonoBehaviour
 
         if (txSim.WasSuccessful)
         {
-            Transaction transaction = Transaction.Deserialize(Convert.ToBase64String(tx));
-
-            RequestResult<string> firstSig = await Web3.Base.SignAndSendTransaction(transaction);
+            RequestResult<string> firstSig = await Web3.Rpc.SendTransactionAsync(tx);
+            userData.currentTransactionSignature = firstSig.Result;
             Debug.Log($"First Tx Signature: {firstSig.Result}");
 
             Web3.WsRpc.SubscribeSignature(firstSig.Result, HandlePaySOLResponse, Commitment.Finalized);
             StartTheVisualShow();
             promptHeader.text = "Waiting For Transaction Confirmation..";
+
+            StartTransactionTimer();
         }
         else
         {
-            errorText.text = txSim.Reason;
+            errorText.text = "Transaction Error: " + txSim.Reason;
+            Debug.Log("Transaction Error: " + txSim.Reason);
+            imageCreator.SubmitNewRequest();
         }
     }
 
     private void HandlePaySOLResponse(SubscriptionState subState, ResponseValue<ErrorResult> responseValue)
     {
-        if(subState.LastError == null)
-        {
-            userData.totalLamportUnits -= applicationData.pricingInLamports;
-            userData.totalSolanaTokens -= applicationData.pricingInSOL;
+        StopTransactionTimer();
 
+        if (subState.LastError == null)
+        {
             UpdateBalanceAndPricingText();
             Web3.WsRpc.Unsubscribe(subState);
             promptHeader.text = "Retrieving Your New AI Created Image..";
@@ -415,7 +435,9 @@ public class ImageGenerationUIManager : MonoBehaviour
         }
         else
         {
+            Debug.Log(subState.LastError);
             errorText.text = subState.LastError;
+            imageCreator.SubmitNewRequest();
         }
     }
 
@@ -434,7 +456,6 @@ public class ImageGenerationUIManager : MonoBehaviour
                 Web3.Account.PublicKey))
             .AddInstruction(MemoProgram.NewMemo(Web3.Account.PublicKey,
             applicationData.transactionMemoStatement + Application.version + " | DGLN"))
-            .AddSignature(Web3.Account.ToString())
             .Build(Web3.Account);
 
         Debug.Log($"Tx base64: {Convert.ToBase64String(tx)}");
@@ -450,19 +471,23 @@ public class ImageGenerationUIManager : MonoBehaviour
             Web3.WsRpc.SubscribeSignature(firstSig.Result, HandlePayDGLNResponse, Commitment.Finalized);
             StartTheVisualShow();
             promptHeader.text = "Waiting For Transaction Confirmation..";
+
+            StartTransactionTimer();
         }
         else
         {
             errorText.text = txSim.Reason;
+            Debug.Log("Transaction Error: " + txSim.Reason);
+            imageCreator.SubmitNewRequest();
         }
     }
 
     private void HandlePayDGLNResponse(SubscriptionState subState, ResponseValue<ErrorResult> responseValue)
     {
+        StopTransactionTimer();
+        
         if (subState.LastError == null)
         {
-            userData.totalDogelanaTokens -= applicationData.pricingInDGLN;
-
             UpdateBalanceAndPricingText();
             Web3.WsRpc.Unsubscribe(subState);
             promptHeader.text = "Retrieving Your New AI Created Image..";
@@ -472,6 +497,85 @@ public class ImageGenerationUIManager : MonoBehaviour
         {
             Debug.Log(subState.LastError);
             errorText.text = subState.LastError;
+            imageCreator.SubmitNewRequest();
+        }
+    }
+
+    private float currentWaitingTransactionTimerSeconds = -1.0f;
+    private float waitingTransactionTimerSeconds = 15.0f;
+
+    private void StartTransactionTimer()
+    {
+        currentWaitingTransactionTimerSeconds = 0.0f;
+    }
+
+    private void StopTransactionTimer()
+    {
+        currentWaitingTransactionTimerSeconds = -1f;
+    }
+
+    private void LateUpdate()
+    {
+        if (currentWaitingTransactionTimerSeconds < 0)
+        {
+            return;
+        }
+
+        currentWaitingTransactionTimerSeconds += Time.deltaTime;
+
+        if (currentWaitingTransactionTimerSeconds < waitingTransactionTimerSeconds)
+        {
+            return;
+        }
+
+        currentWaitingTransactionTimerSeconds = -2f;
+
+        _ = ConfirmTransaction();
+    }
+
+    public async Task ConfirmTransaction()
+    {
+        List<string> array = new List<string>();
+        array.Add(userData.currentTransactionSignature);
+        var state = await Web3.Rpc.GetSignatureStatusesAsync(array);
+
+        if (state.WasSuccessful == true)
+        {
+            Debug.Log(state.Result.Value[0].ConfirmationStatus);
+            Debug.Log(state.Result.Value[0].Confirmations);
+            Debug.Log(state.Result.Value[0].Signature);
+
+            if (state.Result.Value[0].ConfirmationStatus == "finalized")
+            {
+                switch (applicationData.currentPaymentMethodSelected)
+                {
+                    case ApplicationData.PaymentMethod.SOL:
+
+                        userData.totalLamportUnits -= applicationData.pricingInLamports;
+                        userData.totalSolanaTokens -= applicationData.pricingInSOL;
+                        UpdateBalanceAndPricingText();
+                        promptHeader.text = "Retrieving Your New AI Created Image..";
+                        SubmitPromptForImage();
+
+                        break;
+                    case ApplicationData.PaymentMethod.DGLN:
+
+                        userData.totalDogelanaTokens -= applicationData.pricingInDGLN;
+                        UpdateBalanceAndPricingText();
+                        promptHeader.text = "Retrieving Your New AI Created Image..";
+                        SubmitPromptForImage();
+
+                        break;
+                }
+
+                return;
+            }
+
+            StartTransactionTimer();
+        }
+        else
+        {
+            errorText.text = state.Reason;
         }
     }
 }

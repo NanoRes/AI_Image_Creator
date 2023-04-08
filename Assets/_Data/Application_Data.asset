@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66b8d4d2b5027454089b90475fdd4ee0, type: 3}
   m_Name: Application_Data
   m_EditorClassIdentifier: 
-  currentPaymentMethodSelected: 0
+  currentPaymentMethodSelected: 1
   currentTransferMethodSelected: 1
   isWalletOpen: 0
   isFreeForTesting: 0
   characterLimit: 1000
-  pricingInSOL: 0.25
-  pricingInLamports: 250000000
-  pricingInDGLN: 25000000000000
+  pricingInSOL: 0.01
+  pricingInLamports: 10000000
+  pricingInDGLN: 15000000000000
   imageSizeOptions:
   - 256x256
   - 512x512

@@ -8,6 +8,7 @@ public class UserData : ScriptableObject
     public ulong totalLamportUnits = 0;
     public ulong totalDogelanaTokens = 0;
     public string dogelanaTokenAddress = string.Empty;
+    public string currentTransactionSignature = string.Empty;
 
     public void ResetData()
     {
