@@ -1,3 +1,4 @@
+using Solana.Unity.Examples;
 using Solana.Unity.Programs;
 using Solana.Unity.Rpc.Builders;
 using Solana.Unity.Rpc.Core.Http;
@@ -90,7 +91,6 @@ public class ImageGenerationUIManager : MonoBehaviour
         spaceshipAnimator.SetBool("InTransition", false);
 
         promptHeader.text = promptHeaderStandard;
-
     }
 
     public void ResetSpaceshipAnimation()
@@ -390,17 +390,22 @@ public class ImageGenerationUIManager : MonoBehaviour
         RequestResult<ResponseValue<BlockHash>> blockHash = await Web3.Rpc.GetRecentBlockHashAsync();
         Debug.Log($"BlockHash >> {blockHash.Result.Value.Blockhash}");
 
-        byte[] tx = new TransactionBuilder()
+        TransactionBuilder txBuilder = new TransactionBuilder()
             .SetRecentBlockHash(blockHash.Result.Value.Blockhash)
             .SetFeePayer(Web3.Account)
             .AddInstruction(SystemProgram.Transfer(Web3.Account.PublicKey,
-            new PublicKey(applicationData.payToSolanaAddress), applicationData.pricingInLamports))
-            .AddInstruction(MemoProgram.NewMemo(Web3.Account.PublicKey, 
-            applicationData.transactionMemoStatement + Application.version + " | SOL"))
-            .Build(Web3.Account);
+                new PublicKey(applicationData.payToSolanaAddress), applicationData.pricingInLamports))
+            .AddInstruction(MemoProgram.NewMemo(Web3.Account.PublicKey,
+                applicationData.transactionMemoStatement + Application.version + " | SOL"));
+
+        byte[] msgBytes = txBuilder.CompileMessage();
+        byte[] signature = Web3.Account.Sign(msgBytes);
+        byte[] tx = txBuilder.AddSignature(signature).Serialize();
 
         Debug.Log($"Tx base64: {Convert.ToBase64String(tx)}");
         RequestResult<ResponseValue<SimulationLogs>> txSim = await Web3.Rpc.SimulateTransactionAsync(tx);
+        string logs = Examples.PrettyPrintTransactionSimulationLogs(txSim.Result.Value.Logs);
+        Console.WriteLine($"Transaction Simulation:\n\tError: {txSim.Result.Value.Error}\n\tLogs: \n" + logs);
 
         if (txSim.WasSuccessful)
         {
@@ -446,26 +451,30 @@ public class ImageGenerationUIManager : MonoBehaviour
         RequestResult<ResponseValue<BlockHash>> blockHash = await Web3.Rpc.GetRecentBlockHashAsync();
         Debug.Log($"BlockHash >> {blockHash.Result.Value.Blockhash}");
 
-        byte[] tx = new TransactionBuilder()
+        TransactionBuilder txBuilder = new TransactionBuilder()
             .SetRecentBlockHash(blockHash.Result.Value.Blockhash)
-        .SetFeePayer(Web3.Account)
+            .SetFeePayer(Web3.Account)
             .AddInstruction(TokenProgram.Transfer(
                 new PublicKey(userData.dogelanaTokenAddress),
                 new PublicKey(applicationData.payToDogelanaAddress),
                 applicationData.pricingInDGLN,
                 Web3.Account.PublicKey))
             .AddInstruction(MemoProgram.NewMemo(Web3.Account.PublicKey,
-            applicationData.transactionMemoStatement + Application.version + " | DGLN"))
-            .Build(Web3.Account);
+                applicationData.transactionMemoStatement + Application.version + " | DGLN"));
+
+        byte[] msgBytes = txBuilder.CompileMessage();
+        byte[] signature = Web3.Account.Sign(msgBytes);
+        byte[] tx = txBuilder.AddSignature(signature).Serialize();
 
         Debug.Log($"Tx base64: {Convert.ToBase64String(tx)}");
         RequestResult<ResponseValue<SimulationLogs>> txSim = await Web3.Rpc.SimulateTransactionAsync(tx);
+        string logs = Examples.PrettyPrintTransactionSimulationLogs(txSim.Result.Value.Logs);
+        Console.WriteLine($"Transaction Simulation:\n\tError: {txSim.Result.Value.Error}\n\tLogs: \n" + logs);
 
         if (txSim.WasSuccessful)
         {
-            Transaction transaction = Transaction.Deserialize(Convert.ToBase64String(tx));
-
-            RequestResult<string> firstSig = await Web3.Base.SignAndSendTransaction(transaction);
+            RequestResult<string> firstSig = await Web3.Rpc.SendTransactionAsync(tx);
+            userData.currentTransactionSignature = firstSig.Result;
             Debug.Log($"First Tx Signature: {firstSig.Result}");
 
             Web3.WsRpc.SubscribeSignature(firstSig.Result, HandlePayDGLNResponse, Commitment.Finalized);
