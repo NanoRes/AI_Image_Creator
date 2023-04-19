@@ -44,6 +44,11 @@ public class UnityRemoteConfig : MonoBehaviour
 
     public async Task StartItUp()
     {
+        _ = StartItUp();
+    }
+
+    async Task StartItUp()
+    {
         if (Utilities.CheckForInternetConnection())
         {
             await InitializeRemoteConfigAsync();
