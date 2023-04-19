@@ -1,3 +1,4 @@
+using Solana.Unity.Examples;
 using Solana.Unity.Programs;
 using Solana.Unity.Rpc.Builders;
 using Solana.Unity.Rpc.Core.Http;
@@ -14,6 +15,7 @@ using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using WebSocketSharp;
 
 public class ImageGenerationUIManager : MonoBehaviour
 {
@@ -90,7 +92,6 @@ public class ImageGenerationUIManager : MonoBehaviour
         spaceshipAnimator.SetBool("InTransition", false);
 
         promptHeader.text = promptHeaderStandard;
-
     }
 
     public void ResetSpaceshipAnimation()
@@ -390,21 +391,26 @@ public class ImageGenerationUIManager : MonoBehaviour
         RequestResult<ResponseValue<BlockHash>> blockHash = await Web3.Rpc.GetRecentBlockHashAsync();
         Debug.Log($"BlockHash >> {blockHash.Result.Value.Blockhash}");
 
-        byte[] tx = new TransactionBuilder()
-            .SetRecentBlockHash(blockHash.Result.Value.Blockhash)
-            .SetFeePayer(Web3.Account)
-            .AddInstruction(SystemProgram.Transfer(Web3.Account.PublicKey,
-            new PublicKey(applicationData.payToSolanaAddress), applicationData.pricingInLamports))
-            .AddInstruction(MemoProgram.NewMemo(Web3.Account.PublicKey, 
-            applicationData.transactionMemoStatement + Application.version + " | SOL"))
-            .Build(Web3.Account);
-
-        Debug.Log($"Tx base64: {Convert.ToBase64String(tx)}");
-        RequestResult<ResponseValue<SimulationLogs>> txSim = await Web3.Rpc.SimulateTransactionAsync(tx);
-
-        if (txSim.WasSuccessful)
+        var transaction = new Transaction
         {
-            RequestResult<string> firstSig = await Web3.Rpc.SendTransactionAsync(tx);
+            RecentBlockHash = blockHash.Result.Value.Blockhash,
+            FeePayer = Web3.Account.PublicKey,
+            Instructions = new List<TransactionInstruction>
+            {
+                SystemProgram.Transfer(
+                    Web3.Account.PublicKey,
+                    new PublicKey(applicationData.payToSolanaAddress),
+                    applicationData.pricingInLamports),
+                MemoProgram.NewMemo(Web3.Account.PublicKey,
+                    applicationData.transactionMemoStatement + Application.version + " | SOL")
+            },
+            Signatures = new List<SignaturePubKeyPair>()
+        };
+
+        var firstSig = await Web3.Instance.Wallet.SignAndSendTransaction(transaction);
+        
+        if (string.IsNullOrEmpty(firstSig.Result) == false)
+        {
             userData.currentTransactionSignature = firstSig.Result;
             Debug.Log($"First Tx Signature: {firstSig.Result}");
 
@@ -416,8 +422,8 @@ public class ImageGenerationUIManager : MonoBehaviour
         }
         else
         {
-            errorText.text = "Transaction Error: " + txSim.Reason;
-            Debug.Log("Transaction Error: " + txSim.Reason);
+            errorText.text = "Transaction Error: " + firstSig.Reason;
+            Debug.Log("Transaction Error: " + firstSig.Reason);
             imageCreator.SubmitNewRequest();
         }
     }
@@ -446,24 +452,28 @@ public class ImageGenerationUIManager : MonoBehaviour
         RequestResult<ResponseValue<BlockHash>> blockHash = await Web3.Rpc.GetRecentBlockHashAsync();
         Debug.Log($"BlockHash >> {blockHash.Result.Value.Blockhash}");
 
-        byte[] tx = new TransactionBuilder()
-            .SetRecentBlockHash(blockHash.Result.Value.Blockhash)
-        .SetFeePayer(Web3.Account)
-            .AddInstruction(TokenProgram.Transfer(
-                new PublicKey(userData.dogelanaTokenAddress),
-                new PublicKey(applicationData.payToDogelanaAddress),
-                applicationData.pricingInDGLN,
-                Web3.Account.PublicKey))
-            .AddInstruction(MemoProgram.NewMemo(Web3.Account.PublicKey,
-            applicationData.transactionMemoStatement + Application.version + " | DGLN"))
-            .Build(Web3.Account);
-
-        Debug.Log($"Tx base64: {Convert.ToBase64String(tx)}");
-        RequestResult<ResponseValue<SimulationLogs>> txSim = await Web3.Rpc.SimulateTransactionAsync(tx);
-
-        if (txSim.WasSuccessful)
+        var transaction = new Transaction
         {
-            RequestResult<string> firstSig = await Web3.Rpc.SendTransactionAsync(tx);
+            RecentBlockHash = blockHash.Result.Value.Blockhash,
+            FeePayer = Web3.Account.PublicKey,
+            Instructions = new List<TransactionInstruction>
+            {
+                TokenProgram.Transfer(
+                    new PublicKey(userData.dogelanaTokenAddress),
+                    new PublicKey(applicationData.payToDogelanaAddress),
+                    applicationData.pricingInDGLN,
+                    Web3.Account.PublicKey),
+                MemoProgram.NewMemo(Web3.Account.PublicKey,
+                    applicationData.transactionMemoStatement + Application.version + " | DGLN")
+            },
+            Signatures = new List<SignaturePubKeyPair>()
+        };
+
+        var firstSig = await Web3.Instance.Wallet.SignAndSendTransaction(transaction);
+        
+        if (string.IsNullOrEmpty(firstSig.Result) == false)
+        {
+            userData.currentTransactionSignature = firstSig.Result;
             Debug.Log($"First Tx Signature: {firstSig.Result}");
 
             Web3.WsRpc.SubscribeSignature(firstSig.Result, HandlePayDGLNResponse, Commitment.Finalized);
@@ -474,8 +484,8 @@ public class ImageGenerationUIManager : MonoBehaviour
         }
         else
         {
-            errorText.text = txSim.Reason;
-            Debug.Log("Transaction Error: " + txSim.Reason);
+            errorText.text = firstSig.Reason;
+            Debug.Log("Transaction Error: " + firstSig.Reason);
             imageCreator.SubmitNewRequest();
         }
     }
