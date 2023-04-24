@@ -1,6 +1,4 @@
-using Solana.Unity.Examples;
 using Solana.Unity.Programs;
-using Solana.Unity.Rpc.Builders;
 using Solana.Unity.Rpc.Core.Http;
 using Solana.Unity.Rpc.Core.Sockets;
 using Solana.Unity.Rpc.Messages;
@@ -8,14 +6,12 @@ using Solana.Unity.Rpc.Models;
 using Solana.Unity.Rpc.Types;
 using Solana.Unity.SDK;
 using Solana.Unity.Wallet;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using WebSocketSharp;
 
 public class ImageGenerationUIManager : MonoBehaviour
 {
@@ -338,6 +334,8 @@ public class ImageGenerationUIManager : MonoBehaviour
             return;
         }
 
+        confirmationAttemptCounter = 0;
+
         switch (applicationData.currentPaymentMethodSelected)
         {
             case ApplicationData.PaymentMethod.SOL:
@@ -430,21 +428,20 @@ public class ImageGenerationUIManager : MonoBehaviour
 
     private void HandlePaySOLResponse(SubscriptionState subState, ResponseValue<ErrorResult> responseValue)
     {
-        StopTransactionTimer();
-
         if (subState.LastError == null)
         {
             UpdateBalanceAndPricingText();
-            Web3.WsRpc.Unsubscribe(subState);
             promptHeader.text = "Retrieving Your New AI Created Image..";
             SubmitPromptForImage();
+            StopTransactionTimer();
         }
         else
         {
             Debug.Log(subState.LastError);
             errorText.text = subState.LastError;
-            imageCreator.SubmitNewRequest();
         }
+
+        Web3.WsRpc.Unsubscribe(subState);
     }
 
     private async void TransferDogelana()
@@ -492,21 +489,21 @@ public class ImageGenerationUIManager : MonoBehaviour
 
     private void HandlePayDGLNResponse(SubscriptionState subState, ResponseValue<ErrorResult> responseValue)
     {
-        StopTransactionTimer();
-        
         if (subState.LastError == null)
         {
             UpdateBalanceAndPricingText();
-            Web3.WsRpc.Unsubscribe(subState);
             promptHeader.text = "Retrieving Your New AI Created Image..";
             SubmitPromptForImage();
+            StopTransactionTimer();
         }
         else
         {
             Debug.Log(subState.LastError);
             errorText.text = subState.LastError;
-            imageCreator.SubmitNewRequest();
         }
+
+        Web3.WsRpc.Unsubscribe(subState);
+        
     }
 
     private float currentWaitingTransactionTimerSeconds = -1.0f;
@@ -541,11 +538,16 @@ public class ImageGenerationUIManager : MonoBehaviour
         _ = ConfirmTransaction();
     }
 
+    private int confirmationAttemptCounter = 0;
+    private const int confirmationAttempts = 10;
+
     public async Task ConfirmTransaction()
     {
         List<string> array = new List<string>();
         array.Add(userData.currentTransactionSignature);
         var state = await Web3.Rpc.GetSignatureStatusesAsync(array);
+
+        confirmationAttemptCounter++;
 
         if (state.WasSuccessful == true)
         {
@@ -555,6 +557,8 @@ public class ImageGenerationUIManager : MonoBehaviour
 
             if (state.Result.Value[0].ConfirmationStatus == "finalized")
             {
+                errorText.text = "Transaction Confirmation Successful.";
+
                 switch (applicationData.currentPaymentMethodSelected)
                 {
                     case ApplicationData.PaymentMethod.SOL:
@@ -579,11 +583,30 @@ public class ImageGenerationUIManager : MonoBehaviour
                 return;
             }
 
+            if (confirmationAttempts - confirmationAttemptCounter != 1)
+            {
+                errorText.text = "Transaction Confirmation #" + confirmationAttemptCounter
+                    + " Failed; " + (confirmationAttempts - confirmationAttemptCounter) + " attempts remaining.";
+            }
+            else
+            {
+                errorText.text = "Transaction Confirmation #" + confirmationAttemptCounter
+                    + " Failed; " + (confirmationAttempts - confirmationAttemptCounter) + " attempt remaining.";
+            }
+
             StartTransactionTimer();
         }
         else
         {
             errorText.text = state.Reason;
+        }
+
+        if(confirmationAttemptCounter >= confirmationAttempts)
+        {
+            StopTransactionTimer();
+            imageCreator.SubmitNewRequest();
+
+            errorText.text = "Transaction Confirmation Failed After 10 Attempts.";
         }
     }
 }
