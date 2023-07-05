@@ -17,9 +17,9 @@ MonoBehaviour:
   isWalletOpen: 0
   isFreeForTesting: 0
   characterLimit: 1000
-  pricingInSOL: 0.003
-  pricingInLamports: 3000000
-  pricingInDGLN: 5000000000000
+  pricingInSOL: 0.01
+  pricingInLamports: 10000000
+  pricingInDGLN: 50000000000000
   imageSizeOptions:
   - 256x256
   - 512x512
@@ -37,6 +37,6 @@ MonoBehaviour:
   payToDogelanaAddress: 9xuySURUpG8YJ5ZJfRCjfjBuNbJfaGhj2Ti3vj5cqKPA
   mintDGLNAddress: E6UU5M1z4CvSAAF99d9wRoXsasWMEXsvHrz3JQRXtm2X
   tokenProgramID: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
-  apiKey: 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
+  apiKey: sk-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
   createImageAPIURL: https://api.openai.com/v1/images/generations
   editImageAPIURL: https://api.openai.com/v1/images/edits
